@@ -24,7 +24,7 @@ public class UserService {
     private final UserMapper userMapper;
 
     public UserDTO getUserById(Long id) {
-        User user = Utils.findOrThrow(userRepository, id, "User");
+        User user = Utils.findByIdOrThrow(userRepository, id, "User");
         return userMapper.toDto(user);
     }
 
@@ -41,6 +41,12 @@ public class UserService {
         );
     }
 
+    public List<UserDTO> getUsersByRole(UserRole role) {
+        return MappingUtils.mapList(
+            userRepository.findAllByRole(role), userMapper::toDto
+        );
+    }
+
     @Transactional
     public UserDTO createUser(UserCreateDTO userCreateDTO, UserRole userRole) {
         User user = userMapper.toEntity(userCreateDTO);
@@ -53,7 +59,7 @@ public class UserService {
 
     @Transactional
     public UserDTO updateUser(Long id, UserCreateDTO userCreateDTO) {
-        User user = Utils.findOrThrow(userRepository, id, "User");
+        User user = Utils.findByIdOrThrow(userRepository, id, "User");
         BeanUtils.copyProperties(userCreateDTO, user);
 
         return userMapper.toDto(

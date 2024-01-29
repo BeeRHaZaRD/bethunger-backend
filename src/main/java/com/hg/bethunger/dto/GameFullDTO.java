@@ -18,9 +18,11 @@ public class GameFullDTO {
     private UserDTO manager;
     private GameStatus status;
     private LocalDateTime dateStart;
+    private Long duration;
     private String description;
     private String arenaType;
     private String arenaDescription;
+    private PlayerInfoDTO winner;
     private Map<Integer, List<PlayerDTO>> players;
     private List<GameItemDTO> items;
     private List<EventTypeDTO> eventTypes;

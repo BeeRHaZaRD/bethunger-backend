@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class HOtherEventDTO extends HappenedEventDTO {
-    private PlayerDTO player;
+    private PlayerInfoDTO player;
     private String message;
 }

@@ -19,9 +19,13 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping()
-    public List<UserDTO> getUsers() {
-        return userService.getUsers();
+    @GetMapping
+    public List<UserDTO> getUsers(@RequestParam(required = false) UserRole role) {
+        if (role == null) {
+            return userService.getUsers();
+        } else {
+            return userService.getUsersByRole(role);
+        }
     }
 
     @GetMapping(path = "/{userId}")

@@ -29,9 +29,10 @@ public class GameService {
     private final GameItemRepository gameItemRepository;
     private final GameItemMapper gameItemMapper;
     private final PlayerMapper playerMapper;
+    private final EventService eventService;
 
     public GameFullDTO getGameById(Long id) {
-        Game game = Utils.findOrThrow(gameRepository, id, "Game");
+        Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
         return gameMapper.toFullDto(game);
     }
 
@@ -42,20 +43,20 @@ public class GameService {
     }
 
     @Transactional
-    public GameInfoDTO createGame(GameCreateDTO gameCreateDTO) {
+    public GameFullDTO createGame(GameCreateDTO gameCreateDTO) {
         Game game = gameMapper.toEntity(gameCreateDTO);
 
-        User manager = Utils.findOrThrow(userRepository, gameCreateDTO.getManagerId(), "User");
+        User manager = Utils.findByIdOrThrow(userRepository, gameCreateDTO.getManagerId(), "User");
         game.setManager(manager);
 
-        return gameMapper.toInfoDto(
+        return gameMapper.toFullDto(
             gameRepository.save(game)
         );
     }
 
     @Transactional
     public GameFullDTO updateGame(Long id, GameUpdateDTO gameUpdateDTO) {
-        Game game = Utils.findOrThrow(gameRepository, id, "Game");
+        Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
 
         BeanUtils.copyProperties(gameUpdateDTO, game);
         return gameMapper.toFullDto(
@@ -64,29 +65,29 @@ public class GameService {
     }
 
     @Transactional
-    public GameFullDTO publishGame(Long id) {
-        Game game = Utils.findOrThrow(gameRepository, id, "Game");
+    public void publishGame(Long id) {
+        Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
 
-        game.setStatus(GameStatus.PLANNED);
-        return gameMapper.toFullDto(
-            gameRepository.save(game)
-        );
+        // TODO validation
+
+        game.updateStatus(GameStatus.PLANNED);
     }
 
     @Transactional
-    public GameFullDTO startGame(Long id) {
-        Game game = Utils.findOrThrow(gameRepository, id, "Game");
+    public void startGame(Long id) {
+        Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
 
-        game.setStatus(GameStatus.ONGOING);
-        return gameMapper.toFullDto(
-            gameRepository.save(game)
-        );
+        // TODO validation
+
+        eventService.scheduleEvents(game.getPlannedEvents());
+
+        game.updateStatus(GameStatus.ONGOING);
     }
 
     @Transactional
     public PlayerDTO addPlayer(Long gameId, Long playerId) {
-        Game game = Utils.findOrThrow(gameRepository, gameId, "Game");
-        Player player = Utils.findOrThrow(playerRepository, playerId, "Player");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
         game.addPlayer(player);
 
@@ -95,16 +96,16 @@ public class GameService {
 
     @Transactional
     public void removePlayer(Long gameId, Long playerId) {
-        Game game = Utils.findOrThrow(gameRepository, gameId, "Game");
-        Player player = Utils.findOrThrow(playerRepository, playerId, "Player");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
         game.removePlayer(player);
     }
 
     @Transactional
     public GameItemDTO addItem(Long gameId, Long itemId) {
-        Game game = Utils.findOrThrow(gameRepository, gameId, "Game");
-        Item item = Utils.findOrThrow(itemRepository, itemId, "Item");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        Item item = Utils.findByIdOrThrow(itemRepository, itemId, "Item");
 
         GameItem gameItem = new GameItem(game, item);
 

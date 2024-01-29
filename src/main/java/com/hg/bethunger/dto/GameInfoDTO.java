@@ -14,9 +14,11 @@ public class GameInfoDTO {
     private ManagerInfoDTO manager;
     private GameStatus status;
     private LocalDateTime dateStart;
+    private Long duration;
     private String description;
     private String arenaType;
     private String arenaDescription;
+    private PlayerInfoDTO winner;
 
     @Data
     @NoArgsConstructor

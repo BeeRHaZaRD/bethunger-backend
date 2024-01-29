@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +35,17 @@ public class Game {
 
     private LocalDateTime dateStart;
 
-    private LocalDateTime dateEnd;
+    private Duration duration;
 
     private String description;
 
     private String arenaType;
 
     private String arenaDescription;
+
+    @OneToOne
+    @JoinColumn(name = "winner_id", referencedColumnName = "id")
+    private Player winner;
 
     @OneToMany(mappedBy = "game")
     private List<Player> players;
@@ -86,7 +91,7 @@ public class Game {
         }
     }
 
-    public void setStatus(GameStatus status) throws RuntimeException {
+    public void updateStatus(GameStatus status) throws RuntimeException {
         switch (status) {
             case PLANNED -> {
                 if (this.status != GameStatus.DRAFT) {

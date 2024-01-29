@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class HPlayerEventDTO extends HappenedEventDTO {
-    private PlayerDTO player;
+    private PlayerInfoDTO player;
     private HPlayerEventType playerEventType;
 }

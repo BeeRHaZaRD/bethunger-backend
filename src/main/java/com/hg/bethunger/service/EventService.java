@@ -1,7 +1,10 @@
 package com.hg.bethunger.service;
 
 import com.hg.bethunger.Utils;
-import com.hg.bethunger.dto.*;
+import com.hg.bethunger.dto.HappenedEventCreateDTO;
+import com.hg.bethunger.dto.HappenedEventDTO;
+import com.hg.bethunger.dto.PlannedEventCreateDTO;
+import com.hg.bethunger.dto.PlannedEventDTO;
 import com.hg.bethunger.mapper.HappenedEventMapper;
 import com.hg.bethunger.mapper.MappingUtils;
 import com.hg.bethunger.mapper.PlannedEventMapper;
@@ -17,11 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Stream;
 
 @Service
 @Transactional(readOnly = true)
@@ -31,28 +34,51 @@ public class EventService {
     private final ThreadPoolTaskScheduler taskScheduler;
     private final GameRepository gameRepository;
     private final HappenedEventMapper happenedEventMapper;
-    private final HappenedEventRepository happenedEventRepository;
+    private final HappenedEventRepository<HappenedEvent> happenedEventRepository;
+    private final HPlayerEventRepository hPlayerEventRepository;
+    private final HOtherEventRepository hOtherEventRepository;
     private final PlayerRepository playerRepository;
     private final SupplyRepository supplyRepository;
     private final EventTypeRepository eventTypeRepository;
 
     private final Map<Long, ScheduledFuture<?>> scheduledEvents = new HashMap<>();
 
-    public EventService(PlannedEventMapper plannedEventMapper, PlannedEventRepository plannedEventRepository, ThreadPoolTaskScheduler threadPoolTaskScheduler, GameRepository gameRepository, HappenedEventMapper happenedEventMapper, HappenedEventRepository happenedEventRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository) {
+    public EventService(PlannedEventMapper plannedEventMapper, PlannedEventRepository plannedEventRepository, ThreadPoolTaskScheduler threadPoolTaskScheduler, GameRepository gameRepository, HappenedEventMapper happenedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository) {
         this.plannedEventMapper = plannedEventMapper;
         this.plannedEventRepository = plannedEventRepository;
         this.taskScheduler = threadPoolTaskScheduler;
         this.gameRepository = gameRepository;
         this.happenedEventMapper = happenedEventMapper;
         this.happenedEventRepository = happenedEventRepository;
+        this.hPlayerEventRepository = hPlayerEventRepository;
+        this.hOtherEventRepository = hOtherEventRepository;
         this.playerRepository = playerRepository;
         this.supplyRepository = supplyRepository;
         this.eventTypeRepository = eventTypeRepository;
     }
 
-    public List<HappenedEventDTO> getHappenedEventsAfter(Long gameId, HappenedEventsGetDTO dto) {
+    public List<HappenedEventDTO> getHappenedEvents(Long gameId) {
         return MappingUtils.mapList(
-            happenedEventRepository.findAllByGameIdAndHappenedAtAfterOrderByHappenedAtDesc(gameId, dto.getAfter()), happenedEventMapper::toDTO
+            happenedEventRepository.findAllByGameIdOrderByHappenedAtDesc(gameId), happenedEventMapper::toDTO
+        );
+    }
+
+    public List<HappenedEventDTO> getHappenedEventsAfter(Long gameId, LocalDateTime after) {
+        return MappingUtils.mapList(
+            happenedEventRepository.findAllByGameIdAndHappenedAtAfterOrderByHappenedAtDesc(gameId, after), happenedEventMapper::toDTO
+        );
+    }
+
+    public List<HappenedEventDTO> getHappenedEventsByPlayer(Long gameId, Long playerId) {
+        List<HappenedEvent> happenedPlayerEvents = hPlayerEventRepository.findAllByGameIdAndPlayerIdOrderByHappenedAtDesc(gameId, playerId);
+        List<HappenedEvent> happenedOtherEvents = hOtherEventRepository.findAllByGameIdAndPlayerIdOrderByHappenedAtDesc(gameId, playerId);
+
+        return MappingUtils.mapList(
+            Stream.of(happenedPlayerEvents, happenedOtherEvents)
+                .flatMap(Collection::stream)
+                .sorted(Comparator.comparing(HappenedEvent::getHappenedAt).reversed())
+                .toList(),
+            happenedEventMapper::toDTO
         );
     }
 
@@ -60,29 +86,29 @@ public class EventService {
     public void createHappenedEvent(Long gameId, HappenedEventCreateDTO dto) {
         HappenedEvent happenedEvent = happenedEventMapper.toEntity(dto);
 
-        Game game = Utils.findOrThrow(gameRepository, gameId, "Game");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
         happenedEvent.setGame(game);
 
         switch (happenedEvent.getType()) {
             case PLAYER -> {
                 HPlayerEvent hPlayerEvent = (HPlayerEvent) happenedEvent;
-                Player player = Utils.findOrThrow(playerRepository, dto.getPlayerId(), "Player");
+                Player player = Utils.findByIdOrThrow(playerRepository, dto.getPlayerId(), "Player");
                 hPlayerEvent.setPlayer(player);
             }
             case PLANNED_EVENT -> {
                 HPlannedEvent hPlannedEvent = (HPlannedEvent) happenedEvent;
-                PlannedEvent plannedEvent = Utils.findOrThrow(plannedEventRepository, dto.getPlannedEventId(), "Planned event");
+                PlannedEvent plannedEvent = Utils.findByIdOrThrow(plannedEventRepository, dto.getPlannedEventId(), "Planned event");
                 hPlannedEvent.setPlannedEvent(plannedEvent);
             }
             case SUPPLY -> {
                 HSupplyEvent supplyEvent = (HSupplyEvent) happenedEvent;
-                Supply supply = Utils.findOrThrow(supplyRepository, dto.getSupplyId(), "Supply");
+                Supply supply = Utils.findByIdOrThrow(supplyRepository, dto.getSupplyId(), "Supply");
                 supplyEvent.setSupply(supply);
             }
             case OTHER -> {
                 HOtherEvent hOtherEvent = (HOtherEvent) happenedEvent;
                 if (dto.getPlayerId() != null) {
-                    Player player = Utils.findOrThrow(playerRepository, dto.getPlayerId(), "Player");
+                    Player player = Utils.findByIdOrThrow(playerRepository, dto.getPlayerId(), "Player");
                     hOtherEvent.setPlayer(player);
                 }
             }
@@ -98,7 +124,7 @@ public class EventService {
                 HPlayerEvent hPlayerEvent = (HPlayerEvent) happenedEvent;
                 if (hPlayerEvent.getPlayerEventType() == HPlayerEventType.KILLED) {
                     Player player = hPlayerEvent.getPlayer();
-                    player.setStatus(PlayerStatus.DEAD);
+                    player.updateStatus(PlayerStatus.DEAD);
                 } else {
                     PlayerStatus newStatus = switch (hPlayerEvent.getPlayerEventType()) {
                         case SLIGHT_INJURY -> PlayerStatus.SLIGHT_INJURY;
@@ -107,7 +133,7 @@ public class EventService {
                         default -> throw new IllegalStateException("Unexpected value: " + hPlayerEvent.getPlayerEventType());
                     };
                     Player player = hPlayerEvent.getPlayer();
-                    player.setStatus(newStatus);
+                    player.updateStatus(newStatus);
                 }
             }
             case PLANNED_EVENT -> {
@@ -127,14 +153,12 @@ public class EventService {
     public PlannedEventDTO createPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
         PlannedEvent plannedEvent = plannedEventMapper.toEntity(dto);
 
-        Game game = Utils.findOrThrow(gameRepository, gameId, "Game");
-        EventType eventType = Utils.findOrThrow(eventTypeRepository, dto.getEventTypeId(), "Event type");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        EventType eventType = Utils.findByIdOrThrow(eventTypeRepository, dto.getEventTypeId(), "Event type");
 
         plannedEvent.setGame(game);
         plannedEvent.setEventType(eventType);
         plannedEvent = plannedEventRepository.save(plannedEvent);
-
-        scheduleEvent(plannedEvent);
 
         return plannedEventMapper.toDto(plannedEvent);
     }
@@ -145,17 +169,21 @@ public class EventService {
         Utils.existsOrThrow(plannedEventRepository, plannedEventId, "Planned event");
 
         plannedEventRepository.deleteById(plannedEventId);
-
-        unscheduleEvent(plannedEventId);
     }
 
-    private void scheduleEvent(PlannedEvent plannedEvent) {
+    public void scheduleEvents(List<PlannedEvent> plannedEvents) {
+        for (PlannedEvent plannedEvent : plannedEvents) {
+            scheduleEvent(plannedEvent);
+        }
+    }
+
+    public void scheduleEvent(PlannedEvent plannedEvent) {
         Instant startTime = plannedEvent.getStartAt().atZone(ZoneId.systemDefault()).toInstant();
         ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(new StartEventTask(plannedEvent, scheduledEvents), startTime);
         scheduledEvents.put(plannedEvent.getId(), scheduledFuture);
     }
 
-    private void unscheduleEvent(Long plannedEventId) {
+    public void unscheduleEvent(Long plannedEventId) {
         ScheduledFuture<?> scheduledFuture = scheduledEvents.remove(plannedEventId);
         if (scheduledFuture != null) {
             scheduledFuture.cancel(true);

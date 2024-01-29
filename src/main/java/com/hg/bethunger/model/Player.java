@@ -17,7 +17,7 @@ import java.util.Objects;
 @Setter
 @Entity
 @Table(name = "players")
-public class Player {
+public class Player implements Cloneable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -47,8 +47,11 @@ public class Player {
     @Enumerated(EnumType.ORDINAL)
     private PlayerStatus status = PlayerStatus.ALIVE;
 
-    @OneToMany(mappedBy = "player")
-    private List<PlayerCharacteristic> characteristics;
+    @Embedded
+    private TrainResults trainResults;
+
+//    @OneToOne(mappedBy = "winner")
+//    private Game winnerOf;
 
     @OneToMany(mappedBy = "player")
     private List<Bet> bets;
@@ -66,14 +69,15 @@ public class Player {
         this.id = id;
     }
 
-    public Player(String firstName, String lastName, Integer district, Sex sex) {
+    public Player(PlayerStatus status, String firstName, String lastName, Integer district, Sex sex) {
+        this.status = status;
         this.firstName = firstName;
         this.lastName = lastName;
         this.district = district;
         this.sex = sex;
     }
 
-    public void setStatus(PlayerStatus status) {
+    public void updateStatus(PlayerStatus status) {
         if (status.ordinal() > this.status.ordinal()) {
             this.status = status;
         }
@@ -90,5 +94,17 @@ public class Player {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    // TODO for initialiseDb
+    @Override
+    public Player clone() {
+        Player clone = new Player();
+        clone.status = this.status;
+        clone.firstName = this.firstName;
+        clone.lastName = this.lastName;
+        clone.district = this.district;
+        clone.sex = this.sex;
+        return clone;
     }
 }

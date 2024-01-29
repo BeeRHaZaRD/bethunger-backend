@@ -18,7 +18,7 @@ public class StartEventTask implements Runnable {
 
     @Override
     public void run() {
-        plannedEvent.setStatus(PlannedEventStatus.STARTED);
+        plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
         System.out.println("Start event: " + plannedEvent.getEventType().getName() + " at " + LocalDateTime.now());
         scheduledEvents.remove(plannedEvent.getId());
     }

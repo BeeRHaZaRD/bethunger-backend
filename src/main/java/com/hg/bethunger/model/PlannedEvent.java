@@ -39,7 +39,8 @@ public class PlannedEvent {
     @OneToOne(mappedBy = "plannedEvent")
     private HPlannedEvent happenedPlannedEvent;
 
-    public PlannedEvent(EventType eventType, Game game, LocalDateTime startAt) {
+    public PlannedEvent(PlannedEventStatus status, EventType eventType, Game game, LocalDateTime startAt) {
+        this.status = status;
         this.eventType = eventType;
         this.game = game;
         this.startAt = startAt;

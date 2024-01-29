@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
-public class PlayerDTO {
+public class PlayerInfoDTO {
     private Long id;
     private String fullName;
     private LocalDate birthDate;
@@ -17,5 +17,4 @@ public class PlayerDTO {
     private Sex sex;
     private Double coefficient;
     private PlayerStatus status;
-    private TrainResultsDTO trainResults;
 }

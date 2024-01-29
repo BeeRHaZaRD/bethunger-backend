@@ -57,6 +57,14 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Transaction> transactions;
 
+    public User(UserRole role, String username, String password, String firstName, String lastName) {
+        this.role = role;
+        this.username = username;
+        this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

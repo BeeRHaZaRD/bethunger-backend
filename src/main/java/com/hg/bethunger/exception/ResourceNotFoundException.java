@@ -5,7 +5,7 @@ public class ResourceNotFoundException extends RuntimeException {
         super("Could not find " + resourceName + " with id " + id);
     }
 
-    public ResourceNotFoundException(String resourceName, String key, String value) {
-        super("Could not find " + resourceName + " with " + key + " = " + value);
+    public ResourceNotFoundException(String resourceName, String fieldName, Object fieldValue) {
+        super("Could not find " + resourceName + " with " + fieldName + " = " + fieldValue.toString());
     }
 }

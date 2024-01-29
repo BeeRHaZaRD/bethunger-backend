@@ -28,4 +28,9 @@ public class HOtherEvent extends HappenedEvent {
         this.player = player;
         this.message = message;
     }
+
+    public HOtherEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, String message) {
+        super(game, type, happenedAt);
+        this.message = message;
+    }
 }

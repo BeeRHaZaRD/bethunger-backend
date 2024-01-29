@@ -5,7 +5,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class MappingUtils {
-    public static <R, E> List<R> mapList(List<E> list, Function<E, R> converter) {
-        return list.stream().map(converter).collect(Collectors.toList());
+    public static <R, E> List<R> mapList(List<E> list, Function<E, R> mapper) {
+        return list.stream().map(mapper).collect(Collectors.toList());
     }
 }

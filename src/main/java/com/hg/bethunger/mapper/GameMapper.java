@@ -10,6 +10,7 @@ import org.modelmapper.TypeMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.*;
 
 @Component
@@ -20,10 +21,15 @@ public class GameMapper {
     public GameMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
 
-        TypeMap<Game, GameFullDTO> typeMap = modelMapper.createTypeMap(Game.class, GameFullDTO.class);
+        TypeMap<Game, GameInfoDTO> gameToGameInfoDTOTypeMap = modelMapper.createTypeMap(Game.class, GameInfoDTO.class);
+        TypeMap<Game, GameFullDTO> gameToGameFullDTOTypeMap = modelMapper.createTypeMap(Game.class, GameFullDTO.class);
+
         Converter<List<Player>, Map<Integer, List<PlayerDTO>>> playersConverter = ctx -> {
             List<Player> src = ctx.getSource();
             Map<Integer, List<PlayerDTO>> dest = GameFullDTO.initPlayers();
+            if (src == null || src.isEmpty()) {
+                return dest;
+            }
             src.forEach(player -> {
                 PlayerDTO playerDTO = modelMapper.map(player, PlayerDTO.class);
                 Integer district = player.getDistrict();
@@ -35,24 +41,39 @@ public class GameMapper {
             });
             return dest;
         };
-        typeMap.addMappings(
+        Converter<Duration, Long> durationConverter = ctx -> {
+            Duration duration = ctx.getSource();
+            return duration != null ? duration.getSeconds() : null;
+        };
+
+        gameToGameInfoDTOTypeMap.addMappings(
+            mapper -> mapper.using(durationConverter).map(Game::getDuration, GameInfoDTO::setDuration)
+        );
+        gameToGameFullDTOTypeMap.addMappings(
+            mapper -> mapper.using(durationConverter).map(Game::getDuration, GameFullDTO::setDuration)
+        );
+        gameToGameFullDTOTypeMap.addMappings(
             mapper -> mapper.using(playersConverter).map(Game::getPlayers, GameFullDTO::setPlayers)
         );
     }
 
     public GameFullDTO toFullDto(Game game) {
-        return modelMapper.map(game, GameFullDTO.class);
+        GameFullDTO gameFullDTO = modelMapper.map(game, GameFullDTO.class);
+        if (game.getWinner() != null) {
+            gameFullDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
+        }
+        return gameFullDTO;
     }
 
     public GameInfoDTO toInfoDto(Game game) {
-        return modelMapper.map(game, GameInfoDTO.class);
+        GameInfoDTO gameInfoDTO = modelMapper.map(game, GameInfoDTO.class);
+        if (game.getWinner() != null) {
+            gameInfoDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
+        }
+        return gameInfoDTO;
     }
 
     public Game toEntity(GameCreateDTO gameCreateDTO) {
         return modelMapper.map(gameCreateDTO, Game.class);
-    }
-
-    public Game toEntity(GameUpdateDTO gameUpdateDTO) {
-        return modelMapper.map(gameUpdateDTO, Game.class);
     }
 }
