@@ -59,17 +59,17 @@ public class GameMapper {
 
     public GameFullDTO toFullDto(Game game) {
         GameFullDTO gameFullDTO = modelMapper.map(game, GameFullDTO.class);
-        if (game.getWinner() != null) {
-            gameFullDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
-        }
+//        if (game.getWinner() != null) {
+//            gameFullDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
+//        }
         return gameFullDTO;
     }
 
     public GameInfoDTO toInfoDto(Game game) {
         GameInfoDTO gameInfoDTO = modelMapper.map(game, GameInfoDTO.class);
-        if (game.getWinner() != null) {
-            gameInfoDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
-        }
+//        if (game.getWinner() != null) {
+//            gameInfoDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
+//        }
         return gameInfoDTO;
     }
 

@@ -10,18 +10,23 @@ import com.hg.bethunger.model.Player;
 import com.hg.bethunger.model.TrainResults;
 import com.hg.bethunger.model.enums.Sex;
 import com.hg.bethunger.repository.PlayerRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PlayerService {
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+
+    @Autowired
+    public PlayerService(PlayerRepository playerRepository, PlayerMapper playerMapper) {
+        this.playerRepository = playerRepository;
+        this.playerMapper = playerMapper;
+    }
 
     public PlayerDTO getPlayerById(Long id) {
         Player player = Utils.findByIdOrThrow(playerRepository, id, "Player");

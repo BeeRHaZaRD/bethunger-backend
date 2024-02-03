@@ -10,15 +10,15 @@ import com.hg.bethunger.model.*;
 import com.hg.bethunger.model.compositekeys.GameItemKey;
 import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.repository.*;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GameService {
     private final GameRepository gameRepository;
@@ -30,6 +30,19 @@ public class GameService {
     private final GameItemMapper gameItemMapper;
     private final PlayerMapper playerMapper;
     private final EventService eventService;
+
+    @Autowired
+    public GameService(GameRepository gameRepository, GameMapper gameMapper, UserRepository userRepository, PlayerRepository playerRepository, ItemRepository itemRepository, GameItemRepository gameItemRepository, GameItemMapper gameItemMapper, PlayerMapper playerMapper, EventService eventService) {
+        this.gameRepository = gameRepository;
+        this.gameMapper = gameMapper;
+        this.userRepository = userRepository;
+        this.playerRepository = playerRepository;
+        this.itemRepository = itemRepository;
+        this.gameItemRepository = gameItemRepository;
+        this.gameItemMapper = gameItemMapper;
+        this.playerMapper = playerMapper;
+        this.eventService = eventService;
+    }
 
     public GameFullDTO getGameById(Long id) {
         Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
@@ -68,20 +81,39 @@ public class GameService {
     public void publishGame(Long id) {
         Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
 
-        // TODO validation
-
+        if (game.getStatus() != GameStatus.DRAFT) {
+            throw new IllegalStateException("Недопустимый статус игры");
+        }
+        if (!game.isInfoValid()) {
+            throw new IllegalStateException("Информация об игре не заполнена");
+        }
+        if (!game.isPlayersFull()) {
+            throw new IllegalStateException("Не все игроки добавлены");
+        }
         game.updateStatus(GameStatus.PLANNED);
     }
 
     @Transactional
     public void startGame(Long id) {
         Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
+        LocalDateTime now = LocalDateTime.now();
 
-        // TODO validation
+        if (game.getStatus() != GameStatus.PLANNED) {
+            throw new IllegalStateException("Недопустимый статус игры");
+        }
+        if (!game.isPlayersTrainResultsFull()) {
+            throw new IllegalStateException("Не у всех игроков заполнены результаты тренировок");
+        }
+        if (game.getDateStart().isAfter(now)) {
+            throw new IllegalStateException("Дата начала игры еще не наступила");
+        }
 
-        eventService.scheduleEvents(game.getPlannedEvents());
+        eventService.scheduleEvents(game.getPlannedEvents(), now);
 
+        game.setDateStart(now);
         game.updateStatus(GameStatus.ONGOING);
+
+        // TODO send request to start the game
     }
 
     @Transactional

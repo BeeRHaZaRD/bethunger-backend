@@ -11,7 +11,8 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class PlayerDTO {
     private Long id;
-    private String fullName;
+    private String firstName;
+    private String lastName;
     private LocalDate birthDate;
     private Integer district;
     private Sex sex;

@@ -1,6 +1,7 @@
 package com.hg.bethunger.model;
 
 import com.hg.bethunger.model.enums.GameStatus;
+import com.hg.bethunger.model.enums.PlayerStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -17,6 +18,8 @@ import java.util.Objects;
 @Entity
 @Table(name = "games")
 public class Game {
+    private static final int playersNum = 24;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -64,6 +67,24 @@ public class Game {
     @OrderBy("happenedAt DESC")
     private List<HappenedEvent> happenedEvents;
 
+    public boolean isInfoValid() {
+        return this.name != null && !this.name.isBlank()
+            && this.description != null && !this.description.isBlank()
+            && this.arenaType != null && !this.arenaType.isBlank()
+            && this.arenaDescription != null && !this.arenaDescription.isBlank()
+            && this.dateStart != null;
+    }
+
+    public boolean isPlayersFull() {
+        return this.players != null
+            && this.players.size() == playersNum;
+    }
+
+    public boolean isPlayersTrainResultsFull() {
+        return this.players != null
+            && this.players.stream().allMatch(player -> player.getTrainResults() != null);
+    }
+
     public void addPlayer(Player player) {
         if (player != null) {
             if (this.players == null) {
@@ -79,6 +100,10 @@ public class Game {
             this.players.remove(player);
             player.setGame(null);
         }
+    }
+
+    public int playersLeft() {
+        return (int) this.players.stream().filter(player -> player.getStatus() != PlayerStatus.DEAD).count();
     }
 
     public void addEventType(EventType eventType) {
@@ -110,6 +135,16 @@ public class Game {
             }
         }
         this.status = status;
+    }
+
+    /**
+     * Caller must check if only last player is left
+     */
+    public void setWinnerOnComplete() {
+        this.winner = this.players.stream()
+            .filter(player -> player.getStatus() != PlayerStatus.DEAD)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Invalid state: no players left"));
     }
 
     @Override

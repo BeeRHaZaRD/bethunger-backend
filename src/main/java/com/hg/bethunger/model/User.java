@@ -24,7 +24,7 @@ public class User {
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
-    private UserRole role;
+    private UserRole role = UserRole.USER;
 
     @Embedded
     private Account account;

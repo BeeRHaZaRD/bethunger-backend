@@ -6,6 +6,7 @@ import com.hg.bethunger.dto.TrainResultsDTO;
 import com.hg.bethunger.model.enums.Sex;
 import com.hg.bethunger.service.PlayerService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 public class PlayerController {
     private final PlayerService playerService;
 
+    @Autowired
     public PlayerController(PlayerService playerService) {
         this.playerService = playerService;
     }

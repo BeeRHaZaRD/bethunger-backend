@@ -4,6 +4,7 @@ import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.dto.UserDTO;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
+    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
@@ -34,13 +36,8 @@ public class UserController {
     }
 
     @PostMapping(path = "/createManager")
-    public UserDTO createManager(@RequestBody UserCreateDTO userCreateDTO) {
-        return userService.createUser(userCreateDTO, UserRole.MANAGER);
-    }
-
-    @PutMapping(path = "/{userId}")
-    public UserDTO updateUser(@PathVariable Long userId, @RequestBody UserCreateDTO userCreateDTO) {
-        return userService.updateUser(userId, userCreateDTO);
+    public UserDTO createManager(@RequestBody UserCreateDTO dto) {
+        return userService.createUser(dto, UserRole.MANAGER);
     }
 
     @DeleteMapping(path = "/{userId}")

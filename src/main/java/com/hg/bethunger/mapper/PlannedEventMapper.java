@@ -4,12 +4,14 @@ import com.hg.bethunger.dto.PlannedEventCreateDTO;
 import com.hg.bethunger.dto.PlannedEventDTO;
 import com.hg.bethunger.model.PlannedEvent;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PlannedEventMapper {
     private final ModelMapper modelMapper;
 
+    @Autowired
     public PlannedEventMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
     }

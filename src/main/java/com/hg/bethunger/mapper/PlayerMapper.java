@@ -5,7 +5,6 @@ import com.hg.bethunger.dto.PlayerInfoDTO;
 import com.hg.bethunger.dto.TrainResultsDTO;
 import com.hg.bethunger.model.Player;
 import com.hg.bethunger.model.TrainResults;
-import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,14 +17,14 @@ public class PlayerMapper {
     public PlayerMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
 
-        Converter<Player, String> fullNameConverter =
-            ctx -> ctx.getSource().getFirstName() + " " + ctx.getSource().getLastName();
-        modelMapper.createTypeMap(Player.class, PlayerDTO.class).addMappings(
-            mapper -> mapper.using(fullNameConverter).map(player -> player, PlayerDTO::setFullName)
-        );
-        modelMapper.createTypeMap(Player.class, PlayerInfoDTO.class).addMappings(
-            mapper -> mapper.using(fullNameConverter).map(player -> player, PlayerInfoDTO::setFullName)
-        );
+//        Converter<Player, String> fullNameConverter =
+//            ctx -> ctx.getSource().getFirstName() + " " + ctx.getSource().getLastName();
+//        modelMapper.createTypeMap(Player.class, PlayerDTO.class).addMappings(
+//            mapper -> mapper.using(fullNameConverter).map(player -> player, PlayerDTO::setFullName)
+//        );
+//        modelMapper.createTypeMap(Player.class, PlayerInfoDTO.class).addMappings(
+//            mapper -> mapper.using(fullNameConverter).map(player -> player, PlayerInfoDTO::setFullName)
+//        );
     }
 
     public PlayerDTO toDto(Player player) {

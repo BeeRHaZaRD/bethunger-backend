@@ -1,13 +1,18 @@
 package com.hg.bethunger;
 
+import com.hg.bethunger.dto.UserCreateDTO;
+import com.hg.bethunger.dto.UserDTO;
+import com.hg.bethunger.mapper.UserMapper;
 import com.hg.bethunger.model.*;
 import com.hg.bethunger.model.enums.*;
 import com.hg.bethunger.model.init.InitData;
 import com.hg.bethunger.repository.*;
+import com.hg.bethunger.service.UserService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -17,7 +22,7 @@ import java.util.stream.IntStream;
 
 @Component
 @RequiredArgsConstructor
-@Log4j2
+@CommonsLog
 public class RunAfterStartup {
     private final UserRepository userRepository;
     private final GameRepository gameRepository;
@@ -26,30 +31,34 @@ public class RunAfterStartup {
     private final ItemRepository itemRepository;
     private final PlannedEventRepository plannedEventRepository;
     private final HappenedEventRepository<HappenedEvent> happenedEventRepository;
+    private final UserService userService;
+    private final UserMapper userMapper;
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(1)
     public void initialiseDb() {
         User adminUser = userRepository.findByUsername("admin").orElseGet(() -> {
-            User user = new User();
-            user.setRole(UserRole.ADMIN);
-            user.setUsername("admin");
-            user.setPassword("admin");
-            user.setFirstName("System");
-            user.setLastName("Admin");
-            userRepository.save(user);
-            return user;
+            UserCreateDTO userCreateDTO = new UserCreateDTO("admin", "admin", "System", "Admin");
+            UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.ADMIN);
+            return userMapper.toEntity(userDTO);
         });
 
         User manager01 = userRepository.findByUsername("manager01").orElseGet(() -> {
-            User user = new User(UserRole.MANAGER, "manager01", "manager01", "Плутарх", "Хэвенсби");
-            userRepository.save(user);
-            return user;
+            UserCreateDTO userCreateDTO = new UserCreateDTO("manager01", "manager01", "Плутарх", "Хэвенсби");
+            UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.MANAGER);
+            return userMapper.toEntity(userDTO);
         });
 
         User manager02 = userRepository.findByUsername("manager02").orElseGet(() -> {
-            User user = new User(UserRole.MANAGER, "manager02", "manager02", "Сенека", "Крэйн");
-            userRepository.save(user);
-            return user;
+            UserCreateDTO userCreateDTO = new UserCreateDTO("manager02", "manager02", "Сенека", "Крэйн");
+            UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.MANAGER);
+            return userMapper.toEntity(userDTO);
+        });
+
+        User user01 = userRepository.findByUsername("user01").orElseGet(() -> {
+            UserCreateDTO userCreateDTO = new UserCreateDTO("user01", "user01", "Иван", "Иванов");
+            UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.USER);
+            return userMapper.toEntity(userDTO);
         });
 
         if (itemRepository.count() == 0) {
@@ -59,27 +68,45 @@ public class RunAfterStartup {
         List<Player> availablePlayers = InitData.playersFullAlive.stream().map(Player::clone).toList();
         playerRepository.saveAll(availablePlayers);
 
-        List<Player> players75 = InitData.playersNotFull.stream().map(Player::clone).toList();
+        List<Player> players74 = InitData.playersNotFull.stream().map(Player::clone).toList();
+        List<Player> players75 = InitData.playersFullAlive.stream().map(Player::clone).toList();
         List<Player> players76 = InitData.playersFullAlive.stream().map(Player::clone).toList();
         List<Player> players77 = InitData.playersFullRandom.stream().map(Player::clone).toList();
         List<Player> players78 = InitData.playersOneAlive.stream().map(Player::clone).toList();
 
         // DRAFT пустая
-        Game game74 = gameRepository.findByName("Голодные игры #74").orElseGet(() -> {
+        Game game73 = gameRepository.findByName("Голодные игры #73").orElseGet(() -> {
             Game game = new Game();
-            game.setName("Голодные игры #74");
+            game.setName("Голодные игры #73");
             game.setManager(manager01);
             gameRepository.save(game);
             return game;
         });
 
-        // DRAFT не готова к публикации [предметы нет / ЗС нет / игроки частично]
+        // DRAFT не готова к публикации [инфо частично / предметы нет / ЗС нет / игроки частично]
+        Game game74 = gameRepository.findByName("Голодные игры #74").orElseGet(() -> {
+            Game game = new Game();
+            game.setName("Голодные игры #74");
+            game.setManager(manager01);
+            game.setDateStart(LocalDateTime.of(2024, 12, 1, 12, 0));
+            game.setArenaType("Джунгли");
+            gameRepository.save(game);
+
+            players74.forEach(player -> player.setGame(game));
+            playerRepository.saveAll(players74);
+
+            return game;
+        });
+
+        // DRAFT готова к публикации [инфо вся / предметы нет / ЗС нет / игроки все]
         Game game75 = gameRepository.findByName("Голодные игры #75").orElseGet(() -> {
             Game game = new Game();
             game.setName("Голодные игры #75");
             game.setManager(manager01);
-            game.setDateStart(LocalDateTime.of(2024, 12, 1, 0, 0));
+            game.setDateStart(LocalDateTime.of(2024, 11, 1, 12, 0));
+            game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
             game.setArenaType("Джунгли");
+            game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
             gameRepository.save(game);
 
             players75.forEach(player -> player.setGame(game));
@@ -88,24 +115,25 @@ public class RunAfterStartup {
             return game;
         });
 
-        // TODO DRAFT готова к публикации [предметы нет / ЗС нет / игроки все]
-
         // TODO PLANNED не готова к запуску [предметы нет / ЗС нет / тренировки частично]
 
-        // TODO + тренировки
-        // PLANNED готова к запуску [предметы нет / ЗС есть / тренировки нет]
+        // PLANNED готова к запуску [предметы нет / ЗС есть / тренировки все]
         Game game76 = gameRepository.findByName("Голодные игры #76").orElseGet(() -> {
             Game game = new Game();
             game.setStatus(GameStatus.PLANNED);
             game.setName("Голодные игры #76");
             game.setManager(manager01);
-            game.setDateStart(LocalDateTime.of(2024, 11, 1, 12, 0));
+            game.setDateStart(LocalDateTime.now().plusMinutes(5));
+            game.setDateStart(LocalDateTime.now());
             game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
             game.setArenaType("Джунгли");
             game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
             gameRepository.save(game);
 
-            players76.forEach(player -> player.setGame(game));
+            players76.forEach(player -> {
+                player.setGame(game);
+                player.setTrainResults(new TrainResults());
+            });
             playerRepository.saveAll(players76);
 
             EventType eventType1 = eventTypeRepository.save(new EventType(game, "Метеоритный дождь", "Множественное падение каменных обломков в случайных точках арены"));
@@ -113,9 +141,9 @@ public class RunAfterStartup {
             EventType eventType3 = eventTypeRepository.save(new EventType(game, "Нашествие обезьян", "Смотрели фильм \"Восстание планеты обезьян\"? :)"));
             EventType eventType4 = eventTypeRepository.save(new EventType(game, "Кислотный дождь", "Дождевые осадки повышенной кислотности. При попадании на тело вызывают химические ожоги"));
 
-            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType1, game, game.getDateStart().plusHours(1)));
-            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType2, game, game.getDateStart().plusHours(2)));
-            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, game.getDateStart().plusHours(3)));
+            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType1, game, game.getDateStart().plusMinutes(5)));
+            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType2, game, game.getDateStart().plusMinutes(10)));
+            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, game.getDateStart().plusHours(1)));
 
             return game;
         });
@@ -139,7 +167,8 @@ public class RunAfterStartup {
             EventType eventType2 = eventTypeRepository.save(new EventType(game, "Цунами", "Сильное наводнение, приводящее к затоплению значительной части арены"));
             EventType eventType3 = eventTypeRepository.save(new EventType(game, "Нашествие обезьян", "Смотрели фильм \"Восстание планеты обезьян\"? :)"));
 
-            PlannedEvent plannedEvent1 = plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.STARTED, eventType1, game, game.getDateStart().plusHours(5)));
+            PlannedEvent plannedEvent1 = plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.STARTED, eventType1, game, game.getDateStart().plusHours(1)));
+            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, game.getDateStart().plusHours(2)));
             plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType2, game, LocalDateTime.now().plusHours(1)));
             plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, LocalDateTime.now().plusHours(2)));
 
@@ -190,7 +219,6 @@ public class RunAfterStartup {
 
             return game;
         });
-
         game78.setWinner(players78.get(5));
         gameRepository.save(game78);
 
