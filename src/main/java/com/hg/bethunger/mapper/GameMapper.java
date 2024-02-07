@@ -1,9 +1,13 @@
 package com.hg.bethunger.mapper;
 
-import com.hg.bethunger.dto.*;
+import com.hg.bethunger.dto.GameCreateDTO;
+import com.hg.bethunger.dto.GameFullDTO;
+import com.hg.bethunger.dto.GameInfoDTO;
+import com.hg.bethunger.dto.PlayerDTO;
 import com.hg.bethunger.model.Game;
 import com.hg.bethunger.model.Player;
 import com.hg.bethunger.model.enums.Sex;
+import org.modelmapper.Conditions;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeMap;
@@ -11,7 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class GameMapper {
@@ -41,6 +46,7 @@ public class GameMapper {
             });
             return dest;
         };
+
         Converter<Duration, Long> durationConverter = ctx -> {
             Duration duration = ctx.getSource();
             return duration != null ? duration.getSeconds() : null;
@@ -49,28 +55,21 @@ public class GameMapper {
         gameToGameInfoDTOTypeMap.addMappings(
             mapper -> mapper.using(durationConverter).map(Game::getDuration, GameInfoDTO::setDuration)
         );
-        gameToGameFullDTOTypeMap.addMappings(
-            mapper -> mapper.using(durationConverter).map(Game::getDuration, GameFullDTO::setDuration)
-        );
-        gameToGameFullDTOTypeMap.addMappings(
-            mapper -> mapper.using(playersConverter).map(Game::getPlayers, GameFullDTO::setPlayers)
-        );
+        gameToGameFullDTOTypeMap.addMappings(mapper -> {
+            mapper.using(durationConverter).map(Game::getDuration, GameFullDTO::setDuration);
+            mapper.using(playersConverter).map(Game::getPlayers, GameFullDTO::setPlayers);
+            mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getItems, GameFullDTO::setItems);
+            mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getEventTypes, GameFullDTO::setEventTypes);
+            mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getPlannedEvents, GameFullDTO::setPlannedEvents);
+        });
     }
 
     public GameFullDTO toFullDto(Game game) {
-        GameFullDTO gameFullDTO = modelMapper.map(game, GameFullDTO.class);
-//        if (game.getWinner() != null) {
-//            gameFullDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
-//        }
-        return gameFullDTO;
+        return modelMapper.map(game, GameFullDTO.class);
     }
 
     public GameInfoDTO toInfoDto(Game game) {
-        GameInfoDTO gameInfoDTO = modelMapper.map(game, GameInfoDTO.class);
-//        if (game.getWinner() != null) {
-//            gameInfoDTO.getWinner().setFullName(game.getWinner().getFirstName() + ' ' + game.getWinner().getLastName());
-//        }
-        return gameInfoDTO;
+        return modelMapper.map(game, GameInfoDTO.class);
     }
 
     public Game toEntity(GameCreateDTO gameCreateDTO) {

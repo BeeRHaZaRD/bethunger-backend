@@ -1,7 +1,6 @@
 package com.hg.bethunger.security;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.Claim;
 import com.hg.bethunger.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,14 +13,15 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
 public class JWTFilter extends OncePerRequestFilter {
-    public static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = "Bearer";
+
     private final JWTUtil jwtUtil;
     private final UserDetailsServiceImpl userDetailsService;
 
@@ -32,39 +32,52 @@ public class JWTFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(
-        @NonNull HttpServletRequest request,
-        @NonNull HttpServletResponse response,
-        @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
+        throws ServletException, IOException {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || authHeader.isBlank() || !authHeader.startsWith(BEARER_PREFIX)) {
-            if (!request.getServletPath().contains("/auth")) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            } else {
-                filterChain.doFilter(request, response);
-            }
-            return;
-        }
-
-        String token = authHeader.substring(BEARER_PREFIX.length());
-        try {
-            Map<String, Claim> claims = jwtUtil.validateTokenAndRetrieveClaims(token);
-            String username = claims.get("username").asString();
-
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
-
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        } catch (JWTVerificationException exc) {
+        String token = extractTokenFromHeader(authHeader);
+        if (token == null) {
+            // TODO add Problem Details
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-
+        try {
+            jwtUtil.validateToken(token);
+            String username = jwtUtil.extractUsername(token);
+            if (username == null) {
+                // TODO add Problem Details
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        } catch (JWTVerificationException ex) {
+            // TODO add Problem Details
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
         filterChain.doFilter(request, response);
+    }
+
+    private String extractTokenFromHeader(String header) {
+        if (header == null) {
+            return null;
+        }
+        header = header.trim();
+        if (!StringUtils.startsWithIgnoreCase(header, BEARER_PREFIX) || header.equalsIgnoreCase(BEARER_PREFIX)) {
+            return null;
+        }
+        return header.substring(7);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        return request.getServletPath().contains("/auth");
     }
 }

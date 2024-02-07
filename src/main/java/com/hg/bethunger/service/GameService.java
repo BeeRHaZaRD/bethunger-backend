@@ -2,6 +2,7 @@ package com.hg.bethunger.service;
 
 import com.hg.bethunger.Utils;
 import com.hg.bethunger.dto.*;
+import com.hg.bethunger.exception.ResourceAlreadyExistsException;
 import com.hg.bethunger.mapper.GameItemMapper;
 import com.hg.bethunger.mapper.GameMapper;
 import com.hg.bethunger.mapper.MappingUtils;
@@ -49,9 +50,15 @@ public class GameService {
         return gameMapper.toFullDto(game);
     }
 
-    public List<GameInfoDTO> getGames() {
+    public List<GameInfoDTO> getAllGames() {
         return MappingUtils.mapList(
             gameRepository.findAll(), gameMapper::toInfoDto
+        );
+    }
+
+    public List<GameInfoDTO> getPublicGames() {
+        return MappingUtils.mapList(
+            gameRepository.findAllByStatusIn(List.of(GameStatus.PLANNED, GameStatus.ONGOING, GameStatus.COMPLETED)), gameMapper::toInfoDto
         );
     }
 
@@ -91,6 +98,7 @@ public class GameService {
             throw new IllegalStateException("Не все игроки добавлены");
         }
         game.updateStatus(GameStatus.PLANNED);
+        gameRepository.save(game);
     }
 
     @Transactional
@@ -112,6 +120,7 @@ public class GameService {
 
         game.setDateStart(now);
         game.updateStatus(GameStatus.ONGOING);
+        game = gameRepository.save(game);
 
         // TODO send request to start the game
     }
@@ -122,6 +131,7 @@ public class GameService {
         Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
         game.addPlayer(player);
+        gameRepository.save(game);
 
         return playerMapper.toDto(player);
     }
@@ -132,6 +142,7 @@ public class GameService {
         Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
         game.removePlayer(player);
+        gameRepository.save(game);
     }
 
     @Transactional
@@ -141,6 +152,10 @@ public class GameService {
 
         GameItem gameItem = new GameItem(game, item);
 
+        if (gameItemRepository.existsById(gameItem.getId())) {
+            throw new ResourceAlreadyExistsException("Предмет уже добавлен в игру");
+        }
+
         return gameItemMapper.toDto(
             gameItemRepository.save(gameItem)
         );
@@ -148,6 +163,9 @@ public class GameService {
 
     @Transactional
     public void removeItem(Long gameId, Long itemId) {
+        Utils.existsOrThrow(gameRepository, gameId, "Game");
+        Utils.existsOrThrow(itemRepository, itemId, "Item");
+
         GameItemKey gameItemId = new GameItemKey(gameId, itemId);
         gameItemRepository.deleteById(gameItemId);
     }

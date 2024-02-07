@@ -31,6 +31,7 @@ public class RunAfterStartup {
     private final ItemRepository itemRepository;
     private final PlannedEventRepository plannedEventRepository;
     private final HappenedEventRepository<HappenedEvent> happenedEventRepository;
+    private final GameItemRepository gameItemRepository;
     private final UserService userService;
     private final UserMapper userMapper;
 
@@ -61,8 +62,9 @@ public class RunAfterStartup {
             return userMapper.toEntity(userDTO);
         });
 
+        List<Item> items = InitData.items;
         if (itemRepository.count() == 0) {
-            itemRepository.saveAll(InitData.items);
+            itemRepository.saveAll(items);
         }
 
         List<Player> availablePlayers = InitData.playersFullAlive.stream().map(Player::clone).toList();
@@ -117,14 +119,13 @@ public class RunAfterStartup {
 
         // TODO PLANNED не готова к запуску [предметы нет / ЗС нет / тренировки частично]
 
-        // PLANNED готова к запуску [предметы нет / ЗС есть / тренировки все]
+        // PLANNED готова к запуску [предметы есть / ЗС есть / тренировки все]
         Game game76 = gameRepository.findByName("Голодные игры #76").orElseGet(() -> {
             Game game = new Game();
             game.setStatus(GameStatus.PLANNED);
             game.setName("Голодные игры #76");
             game.setManager(manager01);
             game.setDateStart(LocalDateTime.now().plusMinutes(5));
-            game.setDateStart(LocalDateTime.now());
             game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
             game.setArenaType("Джунгли");
             game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
@@ -135,6 +136,9 @@ public class RunAfterStartup {
                 player.setTrainResults(new TrainResults());
             });
             playerRepository.saveAll(players76);
+
+            gameItemRepository.save(new GameItem(game, items.get(0)));
+            gameItemRepository.save(new GameItem(game, items.get(1)));
 
             EventType eventType1 = eventTypeRepository.save(new EventType(game, "Метеоритный дождь", "Множественное падение каменных обломков в случайных точках арены"));
             EventType eventType2 = eventTypeRepository.save(new EventType(game, "Цунами", "Сильное наводнение, приводящее к затоплению значительной части арены"));
@@ -154,14 +158,20 @@ public class RunAfterStartup {
             game.setStatus(GameStatus.ONGOING);
             game.setName("Голодные игры #77");
             game.setManager(manager01);
-            game.setDateStart(LocalDateTime.of(2024, 1, 27, 12, 0));
+            game.setDateStart(LocalDateTime.of(2024, 2, 5, 12, 0));
             game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
             game.setArenaType("Джунгли");
             game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
             gameRepository.save(game);
 
-            players77.forEach(player -> player.setGame(game));
+            players77.forEach(player -> {
+                player.setGame(game);
+                player.setTrainResults(new TrainResults());
+            });
             playerRepository.saveAll(players77);
+
+            gameItemRepository.save(new GameItem(game, items.get(0)));
+            gameItemRepository.save(new GameItem(game, items.get(1)));
 
             EventType eventType1 = eventTypeRepository.save(new EventType(game, "Метеоритный дождь", "Множественное падение каменных обломков в случайных точках арены"));
             EventType eventType2 = eventTypeRepository.save(new EventType(game, "Цунами", "Сильное наводнение, приводящее к затоплению значительной части арены"));
@@ -196,8 +206,14 @@ public class RunAfterStartup {
             game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
             gameRepository.save(game);
 
-            players78.forEach(player -> player.setGame(game));
+            players78.forEach(player -> {
+                player.setGame(game);
+                player.setTrainResults(new TrainResults());
+            });
             playerRepository.saveAll(players78);
+
+            gameItemRepository.save(new GameItem(game, items.get(0)));
+            gameItemRepository.save(new GameItem(game, items.get(1)));
 
             EventType eventType1 = eventTypeRepository.save(new EventType(game, "Метеоритный дождь", "Множественное падение каменных обломков в случайных точках арены"));
             EventType eventType2 = eventTypeRepository.save(new EventType(game, "Цунами", "Сильное наводнение, приводящее к затоплению значительной части арены"));

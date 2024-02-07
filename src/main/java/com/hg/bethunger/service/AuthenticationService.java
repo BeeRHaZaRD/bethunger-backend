@@ -4,12 +4,14 @@ import com.hg.bethunger.dto.AuthDTO;
 import com.hg.bethunger.dto.AuthResponseDTO;
 import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.dto.UserDTO;
+import com.hg.bethunger.mapper.UserMapper;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.security.JWTUtil;
+import com.hg.bethunger.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +20,14 @@ public class AuthenticationService {
     private final UserService userService;
     private final JWTUtil jwtUtil;
     private final AuthenticationManager authManager;
+    private final UserMapper userMapper;
 
     @Autowired
-    public AuthenticationService(UserService userService, JWTUtil jwtUtil, AuthenticationManager authManager) {
+    public AuthenticationService(UserService userService, JWTUtil jwtUtil, AuthenticationManager authManager, UserMapper userMapper) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.authManager = authManager;
+        this.userMapper = userMapper;
     }
 
     public AuthResponseDTO register(UserCreateDTO dto) {
@@ -32,17 +36,13 @@ public class AuthenticationService {
         return new AuthResponseDTO(token, userDTO);
     }
 
-    public AuthResponseDTO login(AuthDTO authDto) {
+    public AuthResponseDTO login(AuthDTO authDto) throws AuthenticationException {
         UsernamePasswordAuthenticationToken authInputToken = new UsernamePasswordAuthenticationToken(authDto.getUsername(), authDto.getPassword());
+        Authentication authentication = authManager.authenticate(authInputToken);
 
-        try {
-            authManager.authenticate(authInputToken);
-        } catch (AuthenticationException e) {
-            throw new BadCredentialsException("Неверные логин/пароль");
-        }
-
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        UserDTO userDTO = userMapper.toDto(userPrincipal.getUser());
         String token = jwtUtil.generateToken(authDto.getUsername());
-        UserDTO userDTO = userService.getUserByUsername(authDto.getUsername());
         return new AuthResponseDTO(token, userDTO);
     }
 }

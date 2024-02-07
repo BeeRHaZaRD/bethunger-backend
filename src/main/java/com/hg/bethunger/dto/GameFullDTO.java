@@ -15,7 +15,7 @@ import java.util.Map;
 public class GameFullDTO {
     private Long id;
     private String name;
-    private UserDTO manager;
+    private UserInfoDTO manager;
     private GameStatus status;
     private LocalDateTime dateStart;
     private Long duration;

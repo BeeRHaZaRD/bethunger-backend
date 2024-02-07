@@ -5,12 +5,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -18,34 +17,26 @@ import java.util.Map;
  */
 @Component
 public class JWTUtil {
-    @Value("${jwt_secret}")
+    @Value("${bethunger.jwt.secret}")
     private String secret;
 
-    @Value("${jwt_issuer}")
+    @Value("${bethunger.jwt.issuer}")
     private String issuer;
+
+    @Value("${bethunger.jwt.lifetime}")
+    private Duration lifetime;
 
     private final String subject = "auth";
 
     public String generateToken(String username) {
-        Date expirationDate = Date.from(ZonedDateTime.now().plusDays(7).toInstant());
+        Instant now = Instant.now();
         return JWT.create()
             .withSubject(subject)
             .withClaim("username", username)
-            .withIssuedAt(new Date())
+            .withIssuedAt(now)
             .withIssuer(issuer)
-            .withExpiresAt(expirationDate)
+            .withExpiresAt(now.plusSeconds(lifetime.getSeconds()))
             .sign(Algorithm.HMAC256(secret));
-    }
-
-    // TODO split into validateToken and extractClaims
-    public Map<String, Claim> validateTokenAndRetrieveClaims(String token) throws JWTVerificationException {
-        JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret))
-            .withSubject(subject)
-            .withIssuer(issuer)
-            .build();
-
-        DecodedJWT jwt = verifier.verify(token);
-        return jwt.getClaims();
     }
 
     public void validateToken(String token) throws JWTVerificationException {
@@ -55,6 +46,10 @@ public class JWTUtil {
             .build();
 
         verifier.verify(token);
+    }
+
+    public String extractUsername(String token) {
+        return JWT.decode(token).getClaim("username").asString();
     }
 
     public Map<String, Claim> extractClaims(String token) {

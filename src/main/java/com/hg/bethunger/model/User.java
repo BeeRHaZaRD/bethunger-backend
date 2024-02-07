@@ -26,8 +26,9 @@ public class User {
     @Enumerated(EnumType.ORDINAL)
     private UserRole role = UserRole.USER;
 
+    @NotNull
     @Embedded
-    private Account account;
+    private Account account = new Account();
 
     @NotNull
     @Column(unique = true)

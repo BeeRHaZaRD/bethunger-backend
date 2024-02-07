@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
 
@@ -45,7 +46,7 @@ public class EventService {
     private final EventTypeRepository eventTypeRepository;
     private final TaskScheduler taskScheduler;
 
-    private final Map<Long, ScheduledFuture<?>> scheduledEvents = new HashMap<>();
+    private final Map<Long, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
 
     @Autowired
     public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler) {

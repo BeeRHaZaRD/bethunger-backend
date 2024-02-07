@@ -41,11 +41,10 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(req -> req
-                .requestMatchers("/auth/register", "/auth/login").permitAll()
+                .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/users/**").hasRole(UserRole.ADMIN.getRole())
 
-                .requestMatchers(HttpMethod.POST, "/games").hasRole(UserRole.ADMIN.getRole())
-                .requestMatchers(HttpMethod.POST, "/games/**/happenedEvents").hasRole(UserRole.ADMIN.getRole())
+                .requestMatchers(HttpMethod.POST, "/games", "/games/**/happenedEvents").hasRole(UserRole.ADMIN.getRole())
                 .requestMatchers(HttpMethod.GET, "/games/**").authenticated()
                 .requestMatchers("/games/**").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
 

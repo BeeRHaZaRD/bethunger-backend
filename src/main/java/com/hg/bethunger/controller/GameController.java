@@ -1,11 +1,16 @@
 package com.hg.bethunger.controller;
 
 import com.hg.bethunger.dto.*;
+import com.hg.bethunger.exception.ResourceNotFoundException;
+import com.hg.bethunger.model.enums.GameStatus;
+import com.hg.bethunger.model.enums.UserRole;
+import com.hg.bethunger.security.UserPrincipal;
 import com.hg.bethunger.service.EventService;
 import com.hg.bethunger.service.GameService;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,13 +31,22 @@ public class GameController {
     }
 
     @GetMapping
-    public List<GameInfoDTO> getGames() {
-        return gameService.getGames();
+    public List<GameInfoDTO> getGames(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return switch (userPrincipal.getUser().getRole()) {
+            case USER ->
+                gameService.getPublicGames();
+            case MANAGER, ADMIN ->
+                gameService.getAllGames();
+        };
     }
 
     @GetMapping(path = "/{gameId}")
-    public GameFullDTO getGameById(@PathVariable Long gameId) {
-        return gameService.getGameById(gameId);
+    public GameFullDTO getGameById(@AuthenticationPrincipal UserPrincipal userPrincipal, @PathVariable Long gameId) {
+        GameFullDTO gameFullDTO = gameService.getGameById(gameId);
+        if (userPrincipal.getUser().getRole() == UserRole.USER && gameFullDTO.getStatus() == GameStatus.DRAFT) {
+            throw new ResourceNotFoundException("Game", gameId);
+        }
+        return gameFullDTO;
     }
 
     @PostMapping
@@ -113,7 +127,6 @@ public class GameController {
 
     @PostMapping(path = "/{gameId}/happenedEvents")
     public void createHappenedEvent(@PathVariable Long gameId, @RequestBody HappenedEventCreateDTO dto) {
-        log.debug("createHappenedEvent");
-//        eventService.createHappenedEvent(gameId, dto);
+        eventService.createHappenedEvent(gameId, dto);
     }
 }

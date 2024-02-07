@@ -33,25 +33,25 @@ public class UserService {
 
     public UserDTO getUserById(Long id) {
         User user = Utils.findByIdOrThrow(userRepository, id, "User");
-        return userMapper.toUserDto(user);
+        return userMapper.toDto(user);
     }
 
     public UserDTO getUserByUsername(String username) {
         User user = userRepository.findByUsername(username).orElseThrow(
             () -> new ResourceNotFoundException("User", "username", username));
 
-        return userMapper.toUserDto(user);
+        return userMapper.toDto(user);
     }
 
     public List<UserDTO> getUsers() {
         return MappingUtils.mapList(
-            userRepository.findAll(), userMapper::toUserDto
+            userRepository.findAll(), userMapper::toDto
         );
     }
 
     public List<UserDTO> getUsersByRole(UserRole role) {
         return MappingUtils.mapList(
-            userRepository.findAllByRole(role), userMapper::toUserDto
+            userRepository.findAllByRole(role), userMapper::toDto
         );
     }
 
@@ -64,7 +64,7 @@ public class UserService {
         }
         user.setRole(userRole);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userMapper.toUserDto(
+        return userMapper.toDto(
             userRepository.save(user)
         );
     }

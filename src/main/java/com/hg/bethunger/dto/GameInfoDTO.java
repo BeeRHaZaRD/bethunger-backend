@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class GameInfoDTO {
     private Long id;
     private String name;
-    private ManagerInfoDTO manager;
+    private UserInfoDTO manager;
     private GameStatus status;
     private LocalDateTime dateStart;
     private Long duration;
@@ -19,11 +19,4 @@ public class GameInfoDTO {
     private String arenaType;
     private String arenaDescription;
     private PlayerInfoDTO winner;
-
-    @Data
-    @NoArgsConstructor
-    static class ManagerInfoDTO {
-        private String firstName;
-        private String lastName;
-    }
 }
