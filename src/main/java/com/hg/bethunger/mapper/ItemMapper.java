@@ -15,6 +15,10 @@ public class ItemMapper {
         this.modelMapper = modelMapper;
     }
 
+    public Item toEntity(ItemDTO itemDTO) {
+        return modelMapper.map(itemDTO, Item.class);
+    }
+
     public ItemDTO toDto(Item item) {
         return modelMapper.map(item, ItemDTO.class);
     }

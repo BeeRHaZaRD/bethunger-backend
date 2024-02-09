@@ -3,7 +3,7 @@ package com.hg.bethunger.controller;
 import com.hg.bethunger.dto.AuthDTO;
 import com.hg.bethunger.dto.AuthResponseDTO;
 import com.hg.bethunger.dto.UserCreateDTO;
-import com.hg.bethunger.service.AuthenticationService;
+import com.hg.bethunger.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,20 +13,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AuthenticationService authenticationService;
+    private final AuthService authService;
 
     @Autowired
-    public AuthController(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping(path = "/register")
     public AuthResponseDTO register(@RequestBody UserCreateDTO dto) {
-        return authenticationService.register(dto);
+        return authService.register(dto);
     }
 
     @PostMapping(path = "/login")
     public AuthResponseDTO login(@RequestBody AuthDTO dto) {
-        return authenticationService.login(dto);
+        return authService.login(dto);
     }
 }

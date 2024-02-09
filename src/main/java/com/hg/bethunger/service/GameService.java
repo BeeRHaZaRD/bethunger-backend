@@ -2,6 +2,9 @@ package com.hg.bethunger.service;
 
 import com.hg.bethunger.Utils;
 import com.hg.bethunger.dto.*;
+import com.hg.bethunger.dto.controlsystem.GameStartDTO;
+import com.hg.bethunger.dto.controlsystem.HappenedEventCreateDTO;
+import com.hg.bethunger.exception.InternalErrorException;
 import com.hg.bethunger.exception.ResourceAlreadyExistsException;
 import com.hg.bethunger.mapper.GameItemMapper;
 import com.hg.bethunger.mapper.GameMapper;
@@ -15,6 +18,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,9 +36,10 @@ public class GameService {
     private final GameItemMapper gameItemMapper;
     private final PlayerMapper playerMapper;
     private final EventService eventService;
+    private final WebClient webClient;
 
     @Autowired
-    public GameService(GameRepository gameRepository, GameMapper gameMapper, UserRepository userRepository, PlayerRepository playerRepository, ItemRepository itemRepository, GameItemRepository gameItemRepository, GameItemMapper gameItemMapper, PlayerMapper playerMapper, EventService eventService) {
+    public GameService(GameRepository gameRepository, GameMapper gameMapper, UserRepository userRepository, PlayerRepository playerRepository, ItemRepository itemRepository, GameItemRepository gameItemRepository, GameItemMapper gameItemMapper, PlayerMapper playerMapper, EventService eventService, WebClient webClient) {
         this.gameRepository = gameRepository;
         this.gameMapper = gameMapper;
         this.userRepository = userRepository;
@@ -43,6 +49,7 @@ public class GameService {
         this.gameItemMapper = gameItemMapper;
         this.playerMapper = playerMapper;
         this.eventService = eventService;
+        this.webClient = webClient;
     }
 
     public GameFullDTO getGameById(Long id) {
@@ -116,13 +123,31 @@ public class GameService {
             throw new IllegalStateException("Дата начала игры еще не наступила");
         }
 
-        eventService.scheduleEvents(game.getPlannedEvents(), now);
-
         game.setDateStart(now);
         game.updateStatus(GameStatus.ONGOING);
         game = gameRepository.save(game);
 
-        // TODO send request to start the game
+        for (PlannedEvent plannedEvent : game.getPlannedEvents()) {
+            eventService.scheduleEvent(plannedEvent, now);
+        }
+
+        try {
+            startGameRequest(game);
+            eventService.createHappenedEvent(game.getId(), HappenedEventCreateDTO.createOther("Игра началась"));
+        } catch (WebClientResponseException ex) {
+            throw new InternalErrorException("Игра не может быть начата из-за отказа системы управления");
+        }
+    }
+
+    private void startGameRequest(Game game) throws WebClientResponseException {
+        List<Long> playersId = game.getPlayers().stream().map(Player::getId).toList();
+
+        webClient.post()
+            .uri("/start-game/" + game.getId())
+            .bodyValue(new GameStartDTO(playersId))
+            .retrieve()
+            .toBodilessEntity()
+            .block();
     }
 
     @Transactional

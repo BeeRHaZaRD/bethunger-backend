@@ -16,14 +16,14 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthenticationService {
+public class AuthService {
     private final UserService userService;
     private final JWTUtil jwtUtil;
     private final AuthenticationManager authManager;
     private final UserMapper userMapper;
 
     @Autowired
-    public AuthenticationService(UserService userService, JWTUtil jwtUtil, AuthenticationManager authManager, UserMapper userMapper) {
+    public AuthService(UserService userService, JWTUtil jwtUtil, AuthenticationManager authManager, UserMapper userMapper) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.authManager = authManager;

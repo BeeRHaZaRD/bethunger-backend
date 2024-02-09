@@ -1,36 +1,40 @@
 package com.hg.bethunger.service;
 
 import com.hg.bethunger.Utils;
-import com.hg.bethunger.dto.HappenedEventCreateDTO;
 import com.hg.bethunger.dto.HappenedEventDTO;
 import com.hg.bethunger.dto.PlannedEventCreateDTO;
-import com.hg.bethunger.dto.PlannedEventDTO;
+import com.hg.bethunger.dto.controlsystem.HappenedEventCreateDTO;
+import com.hg.bethunger.dto.controlsystem.PlannedEventRequestDTO;
 import com.hg.bethunger.mapper.HappenedEventMapper;
 import com.hg.bethunger.mapper.MappingUtils;
 import com.hg.bethunger.mapper.PlannedEventMapper;
 import com.hg.bethunger.model.*;
 import com.hg.bethunger.model.enums.*;
 import com.hg.bethunger.repository.*;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
 
+@CommonsLog
 @Service
 @Transactional(readOnly = true)
 public class EventService {
@@ -45,11 +49,12 @@ public class EventService {
     private final SupplyRepository supplyRepository;
     private final EventTypeRepository eventTypeRepository;
     private final TaskScheduler taskScheduler;
+    private final WebClient webClient;
 
     private final Map<Long, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
 
     @Autowired
-    public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler) {
+    public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler, WebClient webClient) {
         this.plannedEventRepository = plannedEventRepository;
         this.plannedEventMapper = plannedEventMapper;
         this.happenedEventRepository = happenedEventRepository;
@@ -61,27 +66,7 @@ public class EventService {
         this.supplyRepository = supplyRepository;
         this.eventTypeRepository = eventTypeRepository;
         this.taskScheduler = taskScheduler;
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
-    @Order(2)
-    @Transactional
-    public void scheduleOngoingGameEvents() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Game> ongoingGames = gameRepository.findAllByStatus(GameStatus.ONGOING);
-        for (Game game : ongoingGames) {
-            for (PlannedEvent plannedEvent : game.getPlannedEvents()) {
-                if (plannedEvent.getStatus() != PlannedEventStatus.SCHEDULED) {
-                    continue;
-                }
-                if (plannedEvent.getStartAt().isAfter(now)) {
-                    scheduleEvent(plannedEvent);
-                } else {
-                    plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
-                    plannedEventRepository.save(plannedEvent);
-                }
-            }
-        }
+        this.webClient = webClient;
     }
 
     public List<HappenedEventDTO> getHappenedEvents(Long gameId) {
@@ -159,6 +144,7 @@ public class EventService {
                 if (hPlayerEvent.getPlayerEventType() == HPlayerEventType.KILLED) {
                     Player player = hPlayerEvent.getPlayer();
                     player.updateStatus(PlayerStatus.DEAD);
+                    log.debug("Happened event: Player killed");
 
                     // game completed
                     Game game = happenedEvent.getGame();
@@ -167,6 +153,7 @@ public class EventService {
                         game.setDuration(Duration.between(game.getDateStart(), happenedEvent.getHappenedAt()));
                         game.updateStatus(GameStatus.COMPLETED);
 
+                        // cancel all the rest planned events, both SCHEDULED and REQUESTED
                         game.getPlannedEvents().stream()
                             .filter(plannedEvent -> plannedEvent.getStatus() == PlannedEventStatus.SCHEDULED || plannedEvent.getStatus() == PlannedEventStatus.REQUESTED)
                             .forEach(plannedEvent -> {
@@ -175,6 +162,7 @@ public class EventService {
                             });
 
                         happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, happenedEvent.getHappenedAt().plusSeconds(1), "Игра завершена"));
+                        log.debug("Game %d is finished".formatted(game.getId()));
                     }
                 } else {
                     PlayerStatus newStatus = switch (hPlayerEvent.getPlayerEventType()) {
@@ -185,23 +173,29 @@ public class EventService {
                     };
                     Player player = hPlayerEvent.getPlayer();
                     player.updateStatus(newStatus);
+                    log.debug("Happened event: Player injured");
                 }
             }
             case PLANNED_EVENT -> {
                 HPlannedEvent hPlannedEvent = (HPlannedEvent) happenedEvent;
                 PlannedEvent plannedEvent = hPlannedEvent.getPlannedEvent();
                 plannedEvent.setStatus(PlannedEventStatus.STARTED);
+                log.debug("Happened event: Planned event");
             }
             case SUPPLY -> {
                 HSupplyEvent supplyEvent = (HSupplyEvent) happenedEvent;
                 Supply supply = supplyEvent.getSupply();
                 supply.setStatus(SupplyStatus.DELIVERED);
+                log.debug("Happened event: Supply");
+            }
+            case OTHER -> {
+                log.debug("Happened event: Other");
             }
         }
     }
 
     @Transactional
-    public PlannedEventDTO createPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
+    public PlannedEvent createPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
         PlannedEvent plannedEvent = plannedEventMapper.toEntity(dto);
 
         Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
@@ -213,27 +207,20 @@ public class EventService {
 
         plannedEvent.setGame(game);
         plannedEvent.setEventType(eventType);
-        plannedEvent = plannedEventRepository.save(plannedEvent);
 
-        return plannedEventMapper.toDto(plannedEvent);
+        return plannedEventRepository.save(plannedEvent);
     }
 
     @Transactional
-    public PlannedEventDTO runPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
-        PlannedEvent plannedEvent = plannedEventMapper.toEntity(dto);
-
-        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
-        EventType eventType = Utils.findByIdOrThrow(eventTypeRepository, dto.getEventTypeId(), "Event type");
-
-        plannedEvent.setGame(game);
-        plannedEvent.setEventType(eventType);
-        plannedEvent = plannedEventRepository.save(plannedEvent);
-
-        // TODO request
-        plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
-        System.out.println("Start event: " + plannedEvent.getEventType().getName() + " at " + LocalDateTime.now());
-
-        return plannedEventMapper.toDto(plannedEvent);
+    public PlannedEvent runPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
+        PlannedEvent plannedEvent = createPlannedEvent(gameId, dto);
+        try {
+            requestPlannedEventRequest(plannedEvent);
+            plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
+        } catch (WebClientResponseException ex) {
+            plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
+        }
+        return plannedEventRepository.save(plannedEvent);
     }
 
     @Transactional
@@ -245,33 +232,36 @@ public class EventService {
     }
 
     @Transactional
-    public void scheduleEvents(List<PlannedEvent> plannedEvents, LocalDateTime gameDateStart) {
-        for (PlannedEvent plannedEvent : plannedEvents) {
-            if (plannedEvent.getStartAt().isAfter(gameDateStart)) {
-                scheduleEvent(plannedEvent);
-            } else {
-                plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
-                plannedEventRepository.save(plannedEvent);
-            }
+    public void scheduleEvent(PlannedEvent plannedEvent, LocalDateTime gameDateStart) {
+        if (plannedEvent.getStartAt().isBefore(gameDateStart)) {
+            plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
+            plannedEventRepository.save(plannedEvent);
+            return;
         }
+
+        Runnable requestPlannedEventTask = () -> {
+            try {
+                requestPlannedEventRequest(plannedEvent);
+                plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
+            } catch (WebClientResponseException ex) {
+                plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
+            }
+            plannedEventRepository.save(plannedEvent);
+            scheduledEvents.remove(plannedEvent.getId());
+        };
+
+        Instant startTime = plannedEvent.getStartAt().atZone(ZoneId.systemDefault()).toInstant();
+        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(requestPlannedEventTask, startTime);
+        scheduledEvents.put(plannedEvent.getId(), scheduledFuture);
     }
 
-    // for usage in scheduleEvents() only
-    @Transactional
-    public void scheduleEvent(PlannedEvent plannedEvent) {
-        Instant startTime = plannedEvent.getStartAt().atZone(ZoneId.systemDefault()).toInstant();
-
-        Runnable requestEventTask = () -> {
-            // TODO request
-            plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
-
-            System.out.println("Start event: " + plannedEvent.getEventType().getName() + " at " + LocalDateTime.now());
-            // if request is successful
-            scheduledEvents.remove(plannedEvent.getId());
-            plannedEventRepository.save(plannedEvent);
-        };
-        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(requestEventTask, startTime);
-        scheduledEvents.put(plannedEvent.getId(), scheduledFuture);
+    private void requestPlannedEventRequest(PlannedEvent plannedEvent) throws WebClientResponseException {
+        webClient.post()
+            .uri("/events/plannedEvent")
+            .bodyValue(new PlannedEventRequestDTO(plannedEvent.getId(), plannedEvent.getEventType().getId()))
+            .retrieve()
+            .toBodilessEntity()
+            .block();
     }
 
     private void unscheduleEvent(Long plannedEventId) {

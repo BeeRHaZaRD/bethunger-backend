@@ -1,6 +1,7 @@
 package com.hg.bethunger.mapper;
 
 import com.hg.bethunger.dto.*;
+import com.hg.bethunger.dto.controlsystem.HappenedEventCreateDTO;
 import com.hg.bethunger.exception.MissingParameterException;
 import com.hg.bethunger.model.*;
 import org.modelmapper.ModelMapper;

@@ -1,7 +1,10 @@
 package com.hg.bethunger.controller;
 
 import com.hg.bethunger.dto.*;
+import com.hg.bethunger.dto.controlsystem.HappenedEventCreateDTO;
 import com.hg.bethunger.exception.ResourceNotFoundException;
+import com.hg.bethunger.mapper.PlannedEventMapper;
+import com.hg.bethunger.model.PlannedEvent;
 import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.security.UserPrincipal;
@@ -23,11 +26,13 @@ import java.util.List;
 public class GameController {
     private final GameService gameService;
     private final EventService eventService;
+    private final PlannedEventMapper plannedEventMapper;
 
     @Autowired
-    public GameController(GameService gameService, EventService eventService) {
+    public GameController(GameService gameService, EventService eventService, PlannedEventMapper plannedEventMapper) {
         this.gameService = gameService;
         this.eventService = eventService;
+        this.plannedEventMapper = plannedEventMapper;
     }
 
     @GetMapping
@@ -96,11 +101,13 @@ public class GameController {
 
     @PostMapping(path = "/{gameId}/plannedEvents")
     public PlannedEventDTO createPlannedEvent(@PathVariable Long gameId, @RequestBody PlannedEventCreateDTO dto) {
+        PlannedEvent plannedEvent;
         if (dto.getStartAt() != null) {
-            return eventService.createPlannedEvent(gameId, dto);
+            plannedEvent = eventService.createPlannedEvent(gameId, dto);
         } else {
-            return eventService.runPlannedEvent(gameId, dto);
+            plannedEvent = eventService.runPlannedEvent(gameId, dto);
         }
+        return plannedEventMapper.toDto(plannedEvent);
     }
 
     @DeleteMapping(path = "/{gameId}/plannedEvents/{plannedEventId}")
