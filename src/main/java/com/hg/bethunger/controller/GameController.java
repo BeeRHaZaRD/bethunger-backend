@@ -10,6 +10,7 @@ import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.security.UserPrincipal;
 import com.hg.bethunger.service.EventService;
 import com.hg.bethunger.service.GameService;
+import jakarta.validation.Valid;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -55,12 +56,12 @@ public class GameController {
     }
 
     @PostMapping
-    public GameFullDTO createGame(@RequestBody GameCreateDTO dto) {
+    public GameFullDTO createGame(@RequestBody @Valid GameCreateDTO dto) {
         return gameService.createGame(dto);
     }
 
     @PutMapping(path = "/{gameId}")
-    public GameFullDTO updateGame(@PathVariable Long gameId, @RequestBody GameUpdateDTO dto) {
+    public GameFullDTO updateGame(@PathVariable Long gameId, @RequestBody @Valid GameUpdateDTO dto) {
         return gameService.updateGame(gameId, dto);
     }
 
@@ -100,7 +101,7 @@ public class GameController {
     }
 
     @PostMapping(path = "/{gameId}/plannedEvents")
-    public PlannedEventDTO createPlannedEvent(@PathVariable Long gameId, @RequestBody PlannedEventCreateDTO dto) {
+    public PlannedEventDTO createPlannedEvent(@PathVariable Long gameId, @RequestBody @Valid PlannedEventCreateDTO dto) {
         PlannedEvent plannedEvent;
         if (dto.getStartAt() != null) {
             plannedEvent = eventService.createPlannedEvent(gameId, dto);

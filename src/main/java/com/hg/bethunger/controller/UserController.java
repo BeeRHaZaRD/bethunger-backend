@@ -4,6 +4,7 @@ import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.dto.UserDTO;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/createManager")
-    public UserDTO createManager(@RequestBody UserCreateDTO dto) {
+    public UserDTO createManager(@RequestBody @Valid UserCreateDTO dto) {
         return userService.createUser(dto, UserRole.MANAGER);
     }
 

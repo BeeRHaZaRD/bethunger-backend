@@ -4,6 +4,7 @@ import com.hg.bethunger.dto.AuthDTO;
 import com.hg.bethunger.dto.AuthResponseDTO;
 import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,12 +22,12 @@ public class AuthController {
     }
 
     @PostMapping(path = "/register")
-    public AuthResponseDTO register(@RequestBody UserCreateDTO dto) {
+    public AuthResponseDTO register(@RequestBody @Valid UserCreateDTO dto) {
         return authService.register(dto);
     }
 
     @PostMapping(path = "/login")
-    public AuthResponseDTO login(@RequestBody AuthDTO dto) {
+    public AuthResponseDTO login(@RequestBody @Valid AuthDTO dto) {
         return authService.login(dto);
     }
 }
