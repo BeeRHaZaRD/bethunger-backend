@@ -1,0 +1,29 @@
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+
+bethunger.jwt.secret=
+bethunger.jwt.issuer=
+bethunger.jwt.lifetime=
+
+# JPA
+spring.jpa.hibernate.ddl-auto=create-drop
+
+# Error handling
+server.error.include-message=always
+server.error.include-stacktrace=never
+
+# Logging
+logging.level.com.hg.bethunger=debug
+logging.level.reactor.netty.http.client=debug
+#logging.level.org.hibernate.SQL=debug
+#logging.level.org.hibernate.type.descriptor.sql.BasicBinder=trace
+#spring.jpa.properties.hibernate.format_sql=true
+
+# Security
+# to parse paths where "**" is not at the end of the path
+spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+
+# Mapping
+spring.jackson.default-property-inclusion=non_null
