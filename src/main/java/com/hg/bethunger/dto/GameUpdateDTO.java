@@ -24,6 +24,7 @@ public class GameUpdateDTO {
     private String description;
 
     @NotBlank
+    @Size(max = 32)
     private String arenaType;
 
     @NotBlank

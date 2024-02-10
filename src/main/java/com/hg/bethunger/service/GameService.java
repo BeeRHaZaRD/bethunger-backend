@@ -127,15 +127,15 @@ public class GameService {
         game.updateStatus(GameStatus.ONGOING);
         game = gameRepository.save(game);
 
-        for (PlannedEvent plannedEvent : game.getPlannedEvents()) {
-            eventService.scheduleEvent(plannedEvent, now);
-        }
-
         try {
             startGameRequest(game);
             eventService.createHappenedEvent(game.getId(), HappenedEventCreateDTO.createOther("Игра началась"));
         } catch (WebClientResponseException ex) {
             throw new InternalErrorException("Игра не может быть начата из-за отказа системы управления");
+        }
+
+        for (PlannedEvent plannedEvent : game.getPlannedEvents()) {
+            eventService.scheduleEvent(plannedEvent, now);
         }
     }
 
