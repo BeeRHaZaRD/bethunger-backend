@@ -1,14 +1,10 @@
 package com.hg.bethunger.controller;
 
 import com.hg.bethunger.dto.*;
-import com.hg.bethunger.dto.controlsystem.HappenedEventCreateDTO;
 import com.hg.bethunger.exception.ResourceNotFoundException;
-import com.hg.bethunger.mapper.PlannedEventMapper;
-import com.hg.bethunger.model.PlannedEvent;
 import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.security.UserPrincipal;
-import com.hg.bethunger.service.EventService;
 import com.hg.bethunger.service.GameService;
 import jakarta.validation.Valid;
 import lombok.extern.apachecommons.CommonsLog;
@@ -16,9 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @CommonsLog
@@ -26,14 +20,10 @@ import java.util.List;
 @RequestMapping(path="/games")
 public class GameController {
     private final GameService gameService;
-    private final EventService eventService;
-    private final PlannedEventMapper plannedEventMapper;
 
     @Autowired
-    public GameController(GameService gameService, EventService eventService, PlannedEventMapper plannedEventMapper) {
+    public GameController(GameService gameService) {
         this.gameService = gameService;
-        this.eventService = eventService;
-        this.plannedEventMapper = plannedEventMapper;
     }
 
     @GetMapping
@@ -56,6 +46,7 @@ public class GameController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public GameFullDTO createGame(@RequestBody @Valid GameCreateDTO dto) {
         return gameService.createGame(dto);
     }
@@ -75,11 +66,6 @@ public class GameController {
         gameService.startGame(gameId);
     }
 
-//    @PostMapping(path = "/{gameId}/eventTypes")
-//    public EventTypeDTO addEventType(@PathVariable Long gameId, @RequestBody EventTypeCreateDTO eventTypeCreateDTO) {
-//        return gameService.addEventType(gameId, eventTypeCreateDTO);
-//    }
-
     @PostMapping(path = "/{gameId}/players/{playerId}")
     public PlayerDTO addPlayer(@PathVariable Long gameId, @PathVariable Long playerId) {
         return gameService.addPlayer(gameId, playerId);
@@ -98,43 +84,5 @@ public class GameController {
     @DeleteMapping(path = "/{gameId}/items/{itemId}")
     public void removeItem(@PathVariable Long gameId, @PathVariable Long itemId) {
         gameService.removeItem(gameId, itemId);
-    }
-
-    @PostMapping(path = "/{gameId}/plannedEvents")
-    public PlannedEventDTO createPlannedEvent(@PathVariable Long gameId, @RequestBody @Valid PlannedEventCreateDTO dto) {
-        PlannedEvent plannedEvent;
-        if (dto.getStartAt() != null) {
-            plannedEvent = eventService.createPlannedEvent(gameId, dto);
-        } else {
-            plannedEvent = eventService.runPlannedEvent(gameId, dto);
-        }
-        return plannedEventMapper.toDto(plannedEvent);
-    }
-
-    @DeleteMapping(path = "/{gameId}/plannedEvents/{plannedEventId}")
-    public void removePlannedEvent(@PathVariable Long gameId, @PathVariable Long plannedEventId) {
-        eventService.removePlannedEvent(gameId, plannedEventId);
-    }
-
-    @GetMapping(path = "/{gameId}/happenedEvents")
-    public List<HappenedEventDTO> getHappenedEvents(
-        @PathVariable Long gameId,
-        @RequestParam(required = false) LocalDateTime after,
-        @RequestParam(required = false) Long playerId
-    ) {
-        if (after != null && playerId != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid query parameters");
-        } else if (after != null) {
-            return eventService.getHappenedEventsAfter(gameId, after);
-        } else if (playerId != null) {
-            return eventService.getHappenedEventsByPlayer(gameId, playerId);
-        } else {
-            return eventService.getHappenedEvents(gameId);
-        }
-    }
-
-    @PostMapping(path = "/{gameId}/happenedEvents")
-    public void createHappenedEvent(@PathVariable Long gameId, @RequestBody HappenedEventCreateDTO dto) {
-        eventService.createHappenedEvent(gameId, dto);
     }
 }

@@ -7,7 +7,6 @@ import com.hg.bethunger.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,14 +35,14 @@ public class UserController {
         return userService.getUserById(userId);
     }
 
-    @PostMapping(path = "/createManager")
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public UserDTO createManager(@RequestBody @Valid UserCreateDTO dto) {
         return userService.createUser(dto, UserRole.MANAGER);
     }
 
     @DeleteMapping(path = "/{userId}")
-    public ResponseEntity<HttpStatus> deleteUser(@PathVariable Long userId) {
+    public void deleteUser(@PathVariable Long userId) {
         userService.deleteUserById(userId);
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 }

@@ -39,7 +39,7 @@ public class RunAfterStartup {
     @Order(1)
     public void initialiseDb() {
         userRepository.findByUsername("cs").orElseGet(() -> {
-            UserCreateDTO userCreateDTO = new UserCreateDTO("cs", "h&1jDP5e@lF2rK#b4", "System", "Admin");
+            UserCreateDTO userCreateDTO = new UserCreateDTO("cs", "h&1jDP5e@lF2rK#b4", "Control", "System");
             UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.ADMIN);
             return userMapper.toEntity(userDTO);
         });
@@ -76,12 +76,6 @@ public class RunAfterStartup {
         List<Player> availablePlayers = InitData.playersFullAlive.stream().map(Player::clone).toList();
         playerRepository.saveAll(availablePlayers);
 
-        List<Player> players74 = InitData.playersNotFull.stream().map(Player::clone).toList();
-        List<Player> players75 = InitData.playersFullAlive.stream().map(Player::clone).toList();
-        List<Player> players76 = InitData.playersFullAlive.stream().map(Player::clone).toList();
-//        List<Player> players77 = InitData.playersFullRandom.stream().map(Player::clone).toList();
-        List<Player> players78 = InitData.playersOneAlive.stream().map(Player::clone).toList();
-
         // DRAFT пустая
         Game game73 = gameRepository.findByName("Голодные игры #73").orElseGet(() -> {
             Game game = new Game();
@@ -92,6 +86,7 @@ public class RunAfterStartup {
         });
 
         // DRAFT не готова к публикации [инфо частично / предметы нет / ЗС нет / игроки частично]
+        List<Player> players74 = InitData.playersNotFull.stream().map(Player::clone).toList();
         Game game74 = gameRepository.findByName("Голодные игры #74").orElseGet(() -> {
             Game game = new Game();
             game.setName("Голодные игры #74");
@@ -107,6 +102,7 @@ public class RunAfterStartup {
         });
 
         // DRAFT готова к публикации [инфо вся / предметы нет / ЗС нет / игроки все]
+        List<Player> players75 = InitData.playersFullAlive.stream().map(Player::clone).toList();
         Game game75 = gameRepository.findByName("Голодные игры #75").orElseGet(() -> {
             Game game = new Game();
             game.setName("Голодные игры #75");
@@ -126,10 +122,11 @@ public class RunAfterStartup {
         // TODO PLANNED не готова к запуску [предметы нет / ЗС нет / тренировки частично]
 
         // PLANNED готова к запуску [предметы есть / ЗС есть / тренировки все]
-        Game game76 = gameRepository.findByName("Голодные игры #76").orElseGet(() -> {
+        List<Player> players77 = InitData.playersFullAlive.stream().map(Player::clone).toList();
+        Game game77 = gameRepository.findByName("Голодные игры #77").orElseGet(() -> {
             Game game = new Game();
             game.setStatus(GameStatus.PLANNED);
-            game.setName("Голодные игры #76");
+            game.setName("Голодные игры #77");
             game.setManager(manager01);
             game.setDateStart(LocalDateTime.now());
             game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
@@ -137,11 +134,11 @@ public class RunAfterStartup {
             game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
             gameRepository.save(game);
 
-            players76.forEach(player -> {
+            players77.forEach(player -> {
                 player.setGame(game);
                 player.setTrainResults(new TrainResults());
             });
-            playerRepository.saveAll(players76);
+            playerRepository.saveAll(players77);
 
             gameItemRepository.save(new GameItem(game, items.get(0)));
             gameItemRepository.save(new GameItem(game, items.get(1)));
@@ -159,46 +156,8 @@ public class RunAfterStartup {
             return game;
         });
 
-//        // ONGOING [предметы нет / ЗС есть / ПС есть]
-//        Game game77 = gameRepository.findByName("Голодные игры #77").orElseGet(() -> {
-//            Game game = new Game();
-//            game.setStatus(GameStatus.ONGOING);
-//            game.setName("Голодные игры #77");
-//            game.setManager(manager01);
-//            game.setDateStart(LocalDateTime.of(2024, 2, 5, 12, 0));
-//            game.setDescription("Квартальная бойня. Все участники являются победителями прошлых игр. Единственный источник воды - стволы деревьев, растущие в лесу.");
-//            game.setArenaType("Джунгли");
-//            game.setArenaDescription("Состоит из 12 секторов, в каждом из которых по очереди активируется определенное опасное явление. Рог Изобилия находится посередине и представляет собой остров, окруженный соленой водой.");
-//            gameRepository.save(game);
-//
-//            players77.forEach(player -> {
-//                player.setGame(game);
-//                player.setTrainResults(new TrainResults());
-//            });
-//            playerRepository.saveAll(players77);
-//
-//            gameItemRepository.save(new GameItem(game, items.get(0)));
-//            gameItemRepository.save(new GameItem(game, items.get(1)));
-//
-//            EventType eventType1 = eventTypeRepository.save(new EventType(game, "Метеоритный дождь", "Множественное падение каменных обломков в случайных точках арены"));
-//            EventType eventType2 = eventTypeRepository.save(new EventType(game, "Цунами", "Сильное наводнение, приводящее к затоплению значительной части арены"));
-//            EventType eventType3 = eventTypeRepository.save(new EventType(game, "Нашествие обезьян", "Смотрели фильм \"Восстание планеты обезьян\"? :)"));
-//
-//            PlannedEvent plannedEvent1 = plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.STARTED, eventType1, game, game.getDateStart().plusHours(1)));
-//            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, game.getDateStart().plusHours(2)));
-//            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType2, game, LocalDateTime.now().plusHours(1)));
-//            plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.SCHEDULED, eventType3, game, LocalDateTime.now().plusHours(2)));
-//
-//            happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, game.getDateStart(), "Игра началась"));
-//            happenedEventRepository.save(new HPlannedEvent(game, HappenedEventType.PLANNED_EVENT, plannedEvent1.getStartAt(), plannedEvent1));
-//            happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, game.getDateStart().plusMinutes(10), players77.get(0), "Достиг Рога Изобилия"));
-//            happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, game.getDateStart().plusMinutes(20), players77.get(2), "Достиг переправы"));
-//            happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, game.getDateStart().plusMinutes(30), "Распорядитель выступил с объявлением"));
-//
-//            return game;
-//        });
-
         // COMPLETED
+        List<Player> players78 = InitData.playersOneAlive.stream().map(Player::clone).toList();
         Game game78 = gameRepository.findByName("Голодные игры #78").orElseGet(() -> {
             Game game = new Game();
             game.setStatus(GameStatus.COMPLETED);
@@ -228,21 +187,22 @@ public class RunAfterStartup {
             PlannedEvent plannedEvent2 = plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.STARTED, eventType2, game, game.getDateStart().plusHours(6)));
             PlannedEvent plannedEvent3 = plannedEventRepository.save(new PlannedEvent(PlannedEventStatus.STARTED, eventType3, game, game.getDateStart().plusHours(7)));
 
+            happenedEventRepository.save(new HOtherEvent(game, game.getDateStart(), "Игра началась"));
+            happenedEventRepository.save(new HPlannedEvent(game, plannedEvent1.getStartAt(), plannedEvent1));
+            happenedEventRepository.save(new HPlannedEvent(game, plannedEvent2.getStartAt(), plannedEvent2));
+            happenedEventRepository.save(new HPlannedEvent(game, plannedEvent3.getStartAt(), plannedEvent3));
+            happenedEventRepository.save(new HOtherEvent(game, game.getDateStart().plusMinutes(5), players78.get(0), "Достиг рога Изобилия"));
             List<HPlayerEvent> playerEvents = IntStream.range(0, 24)
                 .filter(i -> i != 5)
-                .mapToObj(i -> new HPlayerEvent(game, HappenedEventType.PLAYER, game.getDateStart().plusHours(i+1), players78.get(i), HPlayerEventType.KILLED))
+                .mapToObj(i -> new HPlayerEvent(game, game.getDateStart().plusHours(i+1), players78.get(i), HPlayerEventType.KILLED))
                 .toList();
             happenedEventRepository.saveAll(playerEvents);
-            happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, game.getDateStart(), "Игра началась"));
-            happenedEventRepository.save(new HPlannedEvent(game, HappenedEventType.PLANNED_EVENT, plannedEvent1.getStartAt(), plannedEvent1));
-            happenedEventRepository.save(new HPlannedEvent(game, HappenedEventType.PLANNED_EVENT, plannedEvent2.getStartAt(), plannedEvent2));
-            happenedEventRepository.save(new HPlannedEvent(game, HappenedEventType.PLANNED_EVENT, plannedEvent3.getStartAt(), plannedEvent3));
 
             return game;
         });
         game78.setWinner(players78.get(5));
         gameRepository.save(game78);
 
-        log.debug("DB init is completed");
+        log.debug("DB init is finished");
     }
 }

@@ -33,9 +33,9 @@ public class PlayerService {
         return playerMapper.toDto(player);
     }
 
-    public List<PlayerDTO> getPlayers() {
+    public List<PlayerInfoDTO> getPlayers() {
         return MappingUtils.mapList(
-            playerRepository.findAll(), playerMapper::toDto
+            playerRepository.findAll(), playerMapper::toInfoDTO
         );
     }
 

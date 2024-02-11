@@ -21,8 +21,8 @@ public class HPlannedEvent extends HappenedEvent {
     @JoinColumn(name = "planned_event_id", referencedColumnName = "id")
     private PlannedEvent plannedEvent;
 
-    public HPlannedEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, PlannedEvent plannedEvent) {
-        super(game, type, happenedAt);
+    public HPlannedEvent(Game game, LocalDateTime happenedAt, PlannedEvent plannedEvent) {
+        super(HappenedEventType.PLANNED_EVENT, game, happenedAt);
         this.plannedEvent = plannedEvent;
     }
 }

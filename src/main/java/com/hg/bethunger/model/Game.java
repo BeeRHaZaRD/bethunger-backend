@@ -2,6 +2,7 @@ package com.hg.bethunger.model;
 
 import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.model.enums.PlayerStatus;
+import com.hg.bethunger.model.enums.Sex;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -67,6 +68,22 @@ public class Game {
     @OrderBy("happenedAt DESC")
     private List<HappenedEvent> happenedEvents;
 
+    public boolean isDraft() {
+        return this.status == GameStatus.DRAFT;
+    }
+
+    public boolean isPlanned() {
+        return this.status == GameStatus.PLANNED;
+    }
+
+    public boolean isOngoing() {
+        return this.status == GameStatus.ONGOING;
+    }
+
+    public boolean isCompleted() {
+        return this.status == GameStatus.COMPLETED;
+    }
+
     public boolean isInfoValid() {
         return this.name != null && !this.name.isBlank()
             && this.description != null && !this.description.isBlank()
@@ -106,31 +123,27 @@ public class Game {
         return (int) this.players.stream().filter(player -> player.getStatus() != PlayerStatus.DEAD).count();
     }
 
-    public void addEventType(EventType eventType) {
-        if (eventType != null) {
-            if (this.eventTypes == null) {
-                this.eventTypes = new ArrayList<>();
-            }
-            this.eventTypes.add(eventType);
-            eventType.setGame(this);
-        }
+    public boolean isPlayerSlotFree(Integer district, Sex sex) {
+        return this.players.stream().noneMatch(player ->
+            player.getDistrict().equals(district) && player.getSex() == sex
+        );
     }
 
-    public void updateStatus(GameStatus status) throws RuntimeException {
+    public void updateStatus(GameStatus status) throws IllegalStateException {
         switch (status) {
             case PLANNED -> {
                 if (this.status != GameStatus.DRAFT) {
-                    throw new RuntimeException("The specified game cannot be published");
+                    throw new IllegalStateException("Данная игра не может быть опубликована");
                 }
             }
             case ONGOING -> {
                 if (this.status != GameStatus.PLANNED) {
-                    throw new RuntimeException("The specified game cannot be started");
+                    throw new IllegalStateException("Данная игра не может быть запущена");
                 }
             }
             case COMPLETED -> {
                 if (this.status != GameStatus.ONGOING) {
-                    throw new RuntimeException("The specified game cannot be finished");
+                    throw new IllegalStateException("Данная игра не может быть завершена");
                 }
             }
         }
@@ -140,7 +153,7 @@ public class Game {
     /**
      * Caller must check if only last player is left
      */
-    public void setWinnerOnComplete() {
+    public void setWinnerOnComplete() throws RuntimeException {
         this.winner = this.players.stream()
             .filter(player -> player.getStatus() != PlayerStatus.DEAD)
             .findFirst()

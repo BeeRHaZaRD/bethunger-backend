@@ -27,7 +27,7 @@ public class PlayerController {
     }
 
     @GetMapping
-    public List<PlayerDTO> getPlayers() {
+    public List<PlayerInfoDTO> getPlayers() {
         return playerService.getPlayers();
     }
 
@@ -36,7 +36,7 @@ public class PlayerController {
         return playerService.getAvailablePlayers(district, sex);
     }
 
-    @PutMapping(path = "/{playerId}/trainResults")
+    @PutMapping(path = "/{playerId}/trainings")
     public void updateTrainResults(@PathVariable Long playerId, @RequestBody @Valid TrainResultsDTO dto) {
         playerService.updateTrainResults(playerId, dto);
     }

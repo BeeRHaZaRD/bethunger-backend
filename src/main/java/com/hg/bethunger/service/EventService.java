@@ -13,14 +13,12 @@ import com.hg.bethunger.model.enums.*;
 import com.hg.bethunger.repository.*;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -70,7 +68,7 @@ public class EventService {
     }
 
     public List<HappenedEventDTO> getHappenedEvents(Long gameId) {
-        Utils.existsOrThrow(gameRepository, gameId, "Game");
+        Utils.existsByIdOrThrow(gameRepository, gameId, "Game");
 
         return MappingUtils.mapList(
             happenedEventRepository.findAllByGameIdOrderByHappenedAtDesc(gameId), happenedEventMapper::toDTO
@@ -78,7 +76,7 @@ public class EventService {
     }
 
     public List<HappenedEventDTO> getHappenedEventsAfter(Long gameId, LocalDateTime after) {
-        Utils.existsOrThrow(gameRepository, gameId, "Game");
+        Utils.existsByIdOrThrow(gameRepository, gameId, "Game");
 
         return MappingUtils.mapList(
             happenedEventRepository.findAllByGameIdAndHappenedAtAfterOrderByHappenedAtDesc(gameId, after), happenedEventMapper::toDTO
@@ -86,8 +84,8 @@ public class EventService {
     }
 
     public List<HappenedEventDTO> getHappenedEventsByPlayer(Long gameId, Long playerId) {
-        Utils.existsOrThrow(gameRepository, gameId, "Game");
-        Utils.existsOrThrow(playerRepository, playerId, "Player");
+        Utils.existsByIdOrThrow(gameRepository, gameId, "Game");
+        Utils.existsByIdOrThrow(playerRepository, playerId, "Player");
 
         List<HappenedEvent> happenedPlayerEvents = hPlayerEventRepository.findAllByGameIdAndPlayerIdOrderByHappenedAtDesc(gameId, playerId);
         List<HappenedEvent> happenedOtherEvents = hOtherEventRepository.findAllByGameIdAndPlayerIdOrderByHappenedAtDesc(gameId, playerId);
@@ -161,7 +159,7 @@ public class EventService {
                                 unscheduleEvent(plannedEvent.getId());
                             });
 
-                        happenedEventRepository.save(new HOtherEvent(game, HappenedEventType.OTHER, happenedEvent.getHappenedAt().plusSeconds(1), "Игра завершена"));
+                        happenedEventRepository.save(new HOtherEvent(game, happenedEvent.getHappenedAt().plusSeconds(1), "Игра завершена"));
                         log.debug("Game %d is finished".formatted(game.getId()));
                     }
                 } else {
@@ -201,8 +199,18 @@ public class EventService {
         Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
         EventType eventType = Utils.findByIdOrThrow(eventTypeRepository, dto.getEventTypeId(), "Event type");
 
+        if (game.isCompleted()) {
+            throw new IllegalStateException("Нелья запланировать событие для завершенной игры");
+        }
+        if (!eventType.getGame().getId().equals(game.getId())) {
+            throw new IllegalStateException("Указанный тип события не относится к данной игре");
+        }
+        if (game.getPlannedEvents().stream().anyMatch(event ->
+            event.getStartAt().equals(plannedEvent.getStartAt()))) {
+            throw new IllegalStateException("На указанное время уже запланировано другое событие");
+        }
         if (plannedEvent.getStartAt().isBefore(game.getDateStart())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата запуска планируемого события не может быть меньше даты начала игры");
+            throw new IllegalStateException("Дата запуска планируемого события не может быть меньше даты начала игры");
         }
 
         plannedEvent.setGame(game);
@@ -214,6 +222,12 @@ public class EventService {
     @Transactional
     public PlannedEvent runPlannedEvent(Long gameId, PlannedEventCreateDTO dto) {
         PlannedEvent plannedEvent = createPlannedEvent(gameId, dto);
+
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        if (!game.isOngoing()) {
+            throw new IllegalStateException("Событие можно запустить только для игры, находящейся в процессе");
+        }
+
         try {
             requestPlannedEventRequest(plannedEvent);
             plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
@@ -225,8 +239,8 @@ public class EventService {
 
     @Transactional
     public void removePlannedEvent(Long gameId, Long plannedEventId) {
-        Utils.existsOrThrow(gameRepository, gameId, "Game");
-        Utils.existsOrThrow(plannedEventRepository, plannedEventId, "Planned event");
+        Utils.existsByIdOrThrow(gameRepository, gameId, "Game");
+        Utils.existsByIdOrThrow(plannedEventRepository, plannedEventId, "Planned event");
 
         plannedEventRepository.deleteById(plannedEventId);
     }
@@ -257,7 +271,7 @@ public class EventService {
 
     private void requestPlannedEventRequest(PlannedEvent plannedEvent) throws WebClientResponseException {
         webClient.post()
-            .uri("/events/plannedEvent")
+            .uri("/events/planned-event")
             .bodyValue(new PlannedEventRequestDTO(plannedEvent.getId(), plannedEvent.getEventType().getId()))
             .retrieve()
             .toBodilessEntity()

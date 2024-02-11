@@ -21,8 +21,8 @@ public class HSupplyEvent extends HappenedEvent {
     @JoinColumn(name = "supply_id", referencedColumnName = "id")
     private Supply supply;
 
-    public HSupplyEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, Supply supply) {
-        super(game, type, happenedAt);
+    public HSupplyEvent(Game game, LocalDateTime happenedAt, Supply supply) {
+        super(HappenedEventType.SUPPLY, game, happenedAt);
         this.supply = supply;
     }
 }

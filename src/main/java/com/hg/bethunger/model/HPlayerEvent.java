@@ -26,8 +26,8 @@ public class HPlayerEvent extends HappenedEvent {
     @Enumerated(EnumType.ORDINAL)
     private HPlayerEventType playerEventType;
 
-    public HPlayerEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, Player player, HPlayerEventType playerEventType) {
-        super(game, type, happenedAt);
+    public HPlayerEvent(Game game, LocalDateTime happenedAt, Player player, HPlayerEventType playerEventType) {
+        super(HappenedEventType.PLAYER, game, happenedAt);
         this.player = player;
         this.playerEventType = playerEventType;
     }

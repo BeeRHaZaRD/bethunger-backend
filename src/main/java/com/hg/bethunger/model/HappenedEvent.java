@@ -33,9 +33,9 @@ public class HappenedEvent {
     @NotNull
     private LocalDateTime happenedAt = LocalDateTime.now();
 
-    public HappenedEvent(Game game, HappenedEventType type, LocalDateTime happenedAt) {
-        this.game = game;
+    public HappenedEvent(HappenedEventType type, Game game, LocalDateTime happenedAt) {
         this.type = type;
+        this.game = game;
         this.happenedAt = happenedAt;
     }
 

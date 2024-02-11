@@ -6,10 +6,8 @@ import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -22,6 +20,7 @@ public class AuthController {
     }
 
     @PostMapping(path = "/register")
+    @ResponseStatus(HttpStatus.CREATED)
     public AuthResponseDTO register(@RequestBody @Valid UserCreateDTO dto) {
         return authService.register(dto);
     }

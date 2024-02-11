@@ -71,6 +71,7 @@ public class UserService {
 
     @Transactional
     public void deleteUserById(Long id) {
+        Utils.existsByIdOrThrow(userRepository, id, "User");
         userRepository.deleteById(id);
     }
 }

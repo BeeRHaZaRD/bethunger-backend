@@ -13,6 +13,7 @@ import com.hg.bethunger.mapper.PlayerMapper;
 import com.hg.bethunger.model.*;
 import com.hg.bethunger.model.compositekeys.GameItemKey;
 import com.hg.bethunger.model.enums.GameStatus;
+import com.hg.bethunger.model.enums.Sex;
 import com.hg.bethunger.repository.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,15 +96,13 @@ public class GameService {
     public void publishGame(Long id) {
         Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
 
-        if (game.getStatus() != GameStatus.DRAFT) {
-            throw new IllegalStateException("Недопустимый статус игры");
-        }
         if (!game.isInfoValid()) {
             throw new IllegalStateException("Информация об игре не заполнена");
         }
         if (!game.isPlayersFull()) {
             throw new IllegalStateException("Не все игроки добавлены");
         }
+
         game.updateStatus(GameStatus.PLANNED);
         gameRepository.save(game);
     }
@@ -113,9 +112,6 @@ public class GameService {
         Game game = Utils.findByIdOrThrow(gameRepository, id, "Game");
         LocalDateTime now = LocalDateTime.now();
 
-        if (game.getStatus() != GameStatus.PLANNED) {
-            throw new IllegalStateException("Недопустимый статус игры");
-        }
         if (!game.isPlayersTrainResultsFull()) {
             throw new IllegalStateException("Не у всех игроков заполнены результаты тренировок");
         }
@@ -155,6 +151,18 @@ public class GameService {
         Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
         Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
+        if (game.getStatus() != GameStatus.DRAFT) {
+            throw new IllegalStateException("Нельзя добавить игрока в уже опубликованную игру");
+        }
+        if (player.getGame() != null) {
+            throw new ResourceAlreadyExistsException("Игрок уже добавлен в игру '%s'".formatted(player.getGame().getName()));
+        }
+        if (!game.isPlayerSlotFree(player.getDistrict(), player.getSex())) {
+            throw new IllegalStateException("В указанную игру уже добавлен игрок %s пола из %d дистрикта"
+                .formatted(player.getSex() == Sex.MALE ? "мужского" : "женского", player.getDistrict())
+            );
+        }
+
         game.addPlayer(player);
         gameRepository.save(game);
 
@@ -166,6 +174,13 @@ public class GameService {
         Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
         Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
+        if (game.getStatus() != GameStatus.DRAFT) {
+            throw new IllegalStateException("Нельзя удалить игрока из уже опубликованной игры");
+        }
+        if (player.getGame() == null || !player.getGame().getId().equals(game.getId())) {
+            throw new IllegalStateException("Игрок не находится в указанной игре");
+        }
+
         game.removePlayer(player);
         gameRepository.save(game);
     }
@@ -175,10 +190,13 @@ public class GameService {
         Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
         Item item = Utils.findByIdOrThrow(itemRepository, itemId, "Item");
 
-        GameItem gameItem = new GameItem(game, item);
+        if (!game.isDraft() && !game.isPlanned()) {
+            throw new IllegalStateException("Нельзя добавить предмет в уже начатую игру");
+        }
 
+        GameItem gameItem = new GameItem(game, item);
         if (gameItemRepository.existsById(gameItem.getId())) {
-            throw new ResourceAlreadyExistsException("Предмет уже добавлен в игру");
+            throw new ResourceAlreadyExistsException("Предмет уже добавлен в указанную игру");
         }
 
         return gameItemMapper.toDto(
@@ -188,10 +206,18 @@ public class GameService {
 
     @Transactional
     public void removeItem(Long gameId, Long itemId) {
-        Utils.existsOrThrow(gameRepository, gameId, "Game");
-        Utils.existsOrThrow(itemRepository, itemId, "Item");
+        Game game = Utils.findByIdOrThrow(gameRepository, gameId, "Game");
+        Utils.existsByIdOrThrow(itemRepository, itemId, "Item");
+
+        if (!game.isDraft() && !game.isPlanned()) {
+            throw new IllegalStateException("Нельзя удалить предмет из уже начатой игры");
+        }
 
         GameItemKey gameItemId = new GameItemKey(gameId, itemId);
+        if (!gameItemRepository.existsById(gameItemId)) {
+            throw new ResourceAlreadyExistsException("Предмет не находится в указанной игре");
+        }
+
         gameItemRepository.deleteById(gameItemId);
     }
 }

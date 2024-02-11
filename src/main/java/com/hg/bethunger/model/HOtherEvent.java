@@ -23,14 +23,14 @@ public class HOtherEvent extends HappenedEvent {
     @NotNull
     private String message;
 
-    public HOtherEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, Player player, String message) {
-        super(game, type, happenedAt);
+    public HOtherEvent(Game game, LocalDateTime happenedAt, Player player, String message) {
+        super(HappenedEventType.OTHER, game, happenedAt);
         this.player = player;
         this.message = message;
     }
 
-    public HOtherEvent(Game game, HappenedEventType type, LocalDateTime happenedAt, String message) {
-        super(game, type, happenedAt);
+    public HOtherEvent(Game game, LocalDateTime happenedAt, String message) {
+        super(HappenedEventType.OTHER, game, happenedAt);
         this.message = message;
     }
 }
