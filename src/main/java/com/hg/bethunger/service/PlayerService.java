@@ -46,10 +46,16 @@ public class PlayerService {
     }
 
     @Transactional
-    public void updateTrainResults(Long playerId, TrainResultsDTO trainResultsDTO) {
+    public TrainResultsDTO updateTrainResults(Long playerId, TrainResultsDTO trainResultsDTO) {
         Player player = Utils.findByIdOrThrow(playerRepository, playerId, "Player");
 
-        TrainResults trainResults = playerMapper.trainResultsDTOtoEntity(trainResultsDTO);
+        if (player.getGame() != null && !player.getGame().isDraft() && !player.getGame().isPlanned()) {
+            throw new IllegalStateException("Нельзя изменить результаты тренировок игрока в опубликованной игре");
+        }
+
+        TrainResults trainResults = playerMapper.toTrainResults(trainResultsDTO);
         player.setTrainResults(trainResults);
+
+        return playerMapper.toTrainResultsDTO(trainResults);
     }
 }

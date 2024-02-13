@@ -17,12 +17,12 @@ public class GameItem {
     @EmbeddedId
     private GameItemKey id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("gameId")
     @JoinColumn(name = "game_id")
     private Game game;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("itemId")
     @JoinColumn(name = "item_id")
     private Item item;

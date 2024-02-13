@@ -33,6 +33,7 @@ public class PlannedEvent {
     @NotNull
     private LocalDateTime startAt = LocalDateTime.now();
 
+    @NotNull
     @Enumerated(EnumType.ORDINAL)
     private PlannedEventStatus status = PlannedEventStatus.SCHEDULED;
 

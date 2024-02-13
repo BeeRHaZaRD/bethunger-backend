@@ -9,7 +9,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -61,7 +60,7 @@ public class BethungerApplication {
         );
 
         return WebClient.builder()
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
+//            .clientConnector(new ReactorClientHttpConnector(httpClient))
             .baseUrl("http://localhost:8081")
             .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
             .build();

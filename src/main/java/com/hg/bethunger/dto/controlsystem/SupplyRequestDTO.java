@@ -5,7 +5,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PlannedEventRequestDTO {
+public class SupplyRequestDTO {
     private Long id;
-    private Long eventTypeId;
+    private Long playerId;
+    private Long itemId;
 }

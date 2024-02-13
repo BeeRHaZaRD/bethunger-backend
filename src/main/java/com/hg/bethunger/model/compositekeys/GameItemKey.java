@@ -2,6 +2,7 @@ package com.hg.bethunger.model.compositekeys;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,9 +15,11 @@ import java.util.Objects;
 @Setter
 @Embeddable
 public class GameItemKey implements Serializable {
+    @NotNull
     @Column(name = "game_id")
     private Long gameId;
 
+    @NotNull
     @Column(name = "item_id")
     private Long itemId;
 

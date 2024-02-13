@@ -35,7 +35,11 @@ public class PlayerMapper {
         return modelMapper.map(player, PlayerInfoDTO.class);
     }
 
-    public TrainResults trainResultsDTOtoEntity(TrainResultsDTO trainResultsDTO) {
+    public TrainResultsDTO toTrainResultsDTO(TrainResults trainResults) {
+        return modelMapper.map(trainResults, TrainResultsDTO.class);
+    }
+
+    public TrainResults toTrainResults(TrainResultsDTO trainResultsDTO) {
         return modelMapper.map(trainResultsDTO, TrainResults.class);
     }
 }

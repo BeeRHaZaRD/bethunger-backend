@@ -58,7 +58,6 @@ public class GameMapper {
         gameToGameFullDTOTypeMap.addMappings(mapper -> {
             mapper.using(durationConverter).map(Game::getDuration, GameFullDTO::setDuration);
             mapper.using(playersConverter).map(Game::getPlayers, GameFullDTO::setPlayers);
-            mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getItems, GameFullDTO::setItems);
             mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getEventTypes, GameFullDTO::setEventTypes);
             mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getPlannedEvents, GameFullDTO::setPlannedEvents);
         });

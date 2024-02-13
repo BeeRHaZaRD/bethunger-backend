@@ -1,5 +1,6 @@
 package com.hg.bethunger.model;
 
+import com.hg.bethunger.model.compositekeys.GameItemKey;
 import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.model.enums.PlayerStatus;
 import com.hg.bethunger.model.enums.Sex;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @NoArgsConstructor
 @Getter
@@ -82,6 +84,12 @@ public class Game {
 
     public boolean isCompleted() {
         return this.status == GameStatus.COMPLETED;
+    }
+
+    public Optional<GameItem> getGameItem(Long itemId) {
+        return this.items.stream().filter(gameItem ->
+            gameItem.getId().equals(new GameItemKey(this.getId(), itemId))
+        ).findFirst();
     }
 
     public boolean isInfoValid() {

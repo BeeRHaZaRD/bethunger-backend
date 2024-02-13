@@ -37,7 +37,7 @@ public class PlayerController {
     }
 
     @PutMapping(path = "/{playerId}/trainings")
-    public void updateTrainResults(@PathVariable Long playerId, @RequestBody @Valid TrainResultsDTO dto) {
-        playerService.updateTrainResults(playerId, dto);
+    public TrainResultsDTO updateTrainResults(@PathVariable Long playerId, @RequestBody @Valid TrainResultsDTO dto) {
+        return playerService.updateTrainResults(playerId, dto);
     }
 }

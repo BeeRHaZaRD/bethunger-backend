@@ -44,7 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/users/**").hasRole(UserRole.ADMIN.getRole())
 
-                .requestMatchers(HttpMethod.POST, "/games", "/games/**/happenedEvents").hasRole(UserRole.ADMIN.getRole())
+                .requestMatchers(HttpMethod.POST, "/games", "/games/**/happened-events").hasRole(UserRole.ADMIN.getRole())
                 .requestMatchers(HttpMethod.GET, "/games/**").authenticated()
                 .requestMatchers("/games/**").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
 
@@ -53,7 +53,7 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.GET, "/players/**").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
                 .requestMatchers(HttpMethod.GET, "/players/**/available").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
-                .requestMatchers(HttpMethod.PUT, "/players/**/trainResults").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
+                .requestMatchers(HttpMethod.PUT, "/players/**/trainings").hasAnyRole(UserRole.MANAGER.getRole(), UserRole.ADMIN.getRole())
                 .requestMatchers("/players/**").hasAnyRole(UserRole.ADMIN.getRole())
 
                 .anyRequest().authenticated()

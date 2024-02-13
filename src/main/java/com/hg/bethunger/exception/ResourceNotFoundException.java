@@ -1,6 +1,10 @@
 package com.hg.bethunger.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
     public ResourceNotFoundException(String resourceName, Long id) {
         super("Ресурс не найден: " + resourceName + " с id " + id);
     }

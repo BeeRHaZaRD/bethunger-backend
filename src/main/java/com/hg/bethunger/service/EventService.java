@@ -147,20 +147,7 @@ public class EventService {
                     // game completed
                     Game game = happenedEvent.getGame();
                     if (game.playersLeft() == 1) {
-                        game.setWinnerOnComplete();
-                        game.setDuration(Duration.between(game.getDateStart(), happenedEvent.getHappenedAt()));
-                        game.updateStatus(GameStatus.COMPLETED);
-
-                        // cancel all the rest planned events, both SCHEDULED and REQUESTED
-                        game.getPlannedEvents().stream()
-                            .filter(plannedEvent -> plannedEvent.getStatus() == PlannedEventStatus.SCHEDULED || plannedEvent.getStatus() == PlannedEventStatus.REQUESTED)
-                            .forEach(plannedEvent -> {
-                                plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
-                                unscheduleEvent(plannedEvent.getId());
-                            });
-
-                        happenedEventRepository.save(new HOtherEvent(game, happenedEvent.getHappenedAt().plusSeconds(1), "Игра завершена"));
-                        log.debug("Game %d is finished".formatted(game.getId()));
+                        finishGameHandler(game, happenedEvent.getHappenedAt());
                     }
                 } else {
                     PlayerStatus newStatus = switch (hPlayerEvent.getPlayerEventType()) {
@@ -190,6 +177,24 @@ public class EventService {
                 log.debug("Happened event: Other");
             }
         }
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void finishGameHandler(Game game, LocalDateTime finishDate) {
+        game.setWinnerOnComplete();
+        game.setDuration(Duration.between(game.getDateStart(), finishDate));
+        game.updateStatus(GameStatus.COMPLETED);
+
+        // cancel all the rest planned events, both SCHEDULED and REQUESTED
+        game.getPlannedEvents().stream()
+            .filter(plannedEvent -> plannedEvent.getStatus() == PlannedEventStatus.SCHEDULED || plannedEvent.getStatus() == PlannedEventStatus.REQUESTED)
+            .forEach(plannedEvent -> {
+                plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
+                unscheduleEvent(plannedEvent.getId());
+            });
+
+        happenedEventRepository.save(new HOtherEvent(game, finishDate.plusSeconds(1), "Игра завершена"));
+        log.debug("Game %d is finished".formatted(game.getId()));
     }
 
     @Transactional
@@ -229,7 +234,7 @@ public class EventService {
         }
 
         try {
-            requestPlannedEventRequest(plannedEvent);
+            requestPlannedEvent(plannedEvent);
             plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
         } catch (WebClientResponseException ex) {
             plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
@@ -255,7 +260,7 @@ public class EventService {
 
         Runnable requestPlannedEventTask = () -> {
             try {
-                requestPlannedEventRequest(plannedEvent);
+                requestPlannedEvent(plannedEvent);
                 plannedEvent.setStatus(PlannedEventStatus.REQUESTED);
             } catch (WebClientResponseException ex) {
                 plannedEvent.setStatus(PlannedEventStatus.CANCELLED);
@@ -269,10 +274,11 @@ public class EventService {
         scheduledEvents.put(plannedEvent.getId(), scheduledFuture);
     }
 
-    private void requestPlannedEventRequest(PlannedEvent plannedEvent) throws WebClientResponseException {
+    private void requestPlannedEvent(PlannedEvent plannedEvent) throws WebClientResponseException {
+        var body = new PlannedEventRequestDTO(plannedEvent.getId(), plannedEvent.getEventType().getId());
         webClient.post()
             .uri("/events/planned-event")
-            .bodyValue(new PlannedEventRequestDTO(plannedEvent.getId(), plannedEvent.getEventType().getId()))
+            .bodyValue(body)
             .retrieve()
             .toBodilessEntity()
             .block();

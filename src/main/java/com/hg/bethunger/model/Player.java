@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -50,8 +51,10 @@ public class Player implements Cloneable {
     @Embedded
     private TrainResults trainResults;
 
-//    @OneToOne(mappedBy = "winner")
-//    private Game winnerOf;
+    private LocalDateTime cooldownTo;
+
+    @OneToOne(mappedBy = "winner")
+    private Game winnerOf;
 
     @OneToMany(mappedBy = "player")
     private List<Bet> bets;
@@ -65,10 +68,6 @@ public class Player implements Cloneable {
     @OneToMany(mappedBy = "player")
     private List<HOtherEvent> happenedOtherEvents;
 
-    public Player(Long id) {
-        this.id = id;
-    }
-
     public Player(PlayerStatus status, String firstName, String lastName, Integer district, Sex sex) {
         this.status = status;
         this.firstName = firstName;
@@ -81,6 +80,10 @@ public class Player implements Cloneable {
         if (status.ordinal() > this.status.ordinal()) {
             this.status = status;
         }
+    }
+
+    public boolean isSuppliable() {
+        return this.cooldownTo == null || this.cooldownTo.isBefore(LocalDateTime.now());
     }
 
     @Override

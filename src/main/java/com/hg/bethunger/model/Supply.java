@@ -40,12 +40,11 @@ public class Supply {
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
-    private SupplyStatus status;
+    private SupplyStatus status = SupplyStatus.REQUESTED;
 
     @OneToOne(mappedBy = "supply")
     private HSupplyEvent hSupplyEvent;
 
-    @NotNull
     @OneToOne
     @JoinColumn(name = "transaction_id", referencedColumnName = "id")
     private Transaction transaction;
