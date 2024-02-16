@@ -6,7 +6,10 @@ import com.hg.bethunger.dto.TrainResultsDTO;
 import com.hg.bethunger.model.enums.Sex;
 import com.hg.bethunger.service.PlayerService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +35,11 @@ public class PlayerController {
     }
 
     @GetMapping(path = "/available")
-    public List<PlayerInfoDTO> getAvailablePlayers(@RequestParam Integer district, @RequestParam Sex sex) {
+    @Validated
+    public List<PlayerInfoDTO> getAvailablePlayers(
+        @RequestParam @Min(1) @Max(12) Integer district,
+        @RequestParam Sex sex
+    ) {
         return playerService.getAvailablePlayers(district, sex);
     }
 

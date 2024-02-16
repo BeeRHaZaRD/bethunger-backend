@@ -4,7 +4,10 @@ import com.hg.bethunger.dto.UserCreateDTO;
 import com.hg.bethunger.dto.UserDTO;
 import com.hg.bethunger.mapper.UserMapper;
 import com.hg.bethunger.model.*;
-import com.hg.bethunger.model.enums.*;
+import com.hg.bethunger.model.enums.GameStatus;
+import com.hg.bethunger.model.enums.HPlayerEventType;
+import com.hg.bethunger.model.enums.PlannedEventStatus;
+import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.model.init.InitData;
 import com.hg.bethunger.repository.*;
 import com.hg.bethunger.service.UserService;
@@ -119,8 +122,6 @@ public class RunAfterStartup {
             return game;
         });
 
-        // TODO PLANNED не готова к запуску [предметы нет / ЗС нет / тренировки частично]
-
         // PLANNED готова к запуску [предметы есть / ЗС есть / тренировки все]
         List<Player> players77 = InitData.playersFullAlive.stream().map(Player::clone).toList();
         Game game77 = gameRepository.findByName("Голодные игры #77").orElseGet(() -> {
@@ -136,7 +137,7 @@ public class RunAfterStartup {
 
             players77.forEach(player -> {
                 player.setGame(game);
-                player.setTrainResults(new TrainResults());
+                player.setTrainResults(new TrainResults(1,2,3,4,5,6,7,8));
             });
             playerRepository.saveAll(players77);
 
