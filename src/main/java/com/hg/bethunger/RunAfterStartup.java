@@ -15,10 +15,14 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
+
+import static com.hg.bethunger.model.enums.UserRole.USER;
 
 @Component
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class RunAfterStartup {
     private final EventTypeRepository eventTypeRepository;
     private final PlayerRepository playerRepository;
     private final ItemRepository itemRepository;
+    private final BetRepository betRepository;
     private final PlannedEventRepository plannedEventRepository;
     private final HappenedEventRepository<HappenedEvent> happenedEventRepository;
     private final GameItemRepository gameItemRepository;
@@ -64,7 +69,19 @@ public class RunAfterStartup {
 
         User user01 = userRepository.findByUsername("user01").orElseGet(() -> {
             UserCreateDTO userCreateDTO = new UserCreateDTO("user01", "user01", "Иван", "Иванов");
-            UserDTO userDTO = userService.createUser(userCreateDTO, UserRole.USER);
+            UserDTO userDTO = userService.createUser(userCreateDTO, USER);
+            return userMapper.toEntity(userDTO);
+        });
+
+        User user02 = userRepository.findByUsername("user02").orElseGet(() -> {
+            UserCreateDTO userCreateDTO = new UserCreateDTO("user02", "user02", "Алексей", "Алексеев");
+            UserDTO userDTO = userService.createUser(userCreateDTO, USER);
+            return userMapper.toEntity(userDTO);
+        });
+
+        User user03 = userRepository.findByUsername("user03").orElseGet(() -> {
+            UserCreateDTO userCreateDTO = new UserCreateDTO("user03", "user03", "Гейл", "Хоторн");
+            UserDTO userDTO = userService.createUser(userCreateDTO, USER);
             return userMapper.toEntity(userDTO);
         });
 
@@ -202,6 +219,22 @@ public class RunAfterStartup {
         });
         game78.setWinner(players78.get(5));
         gameRepository.save(game78);
+
+        // BETS
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        for (int i = 1; i < 11; i++) {
+            long randomId = 5 + (int) (Math.random() * 3);
+            BigDecimal randomAmount = BigDecimal.valueOf(10 + (Math.random() * 500));
+            long randomPlayer = 64 + (int) (Math.random() * 24);
+            Bet bet = new Bet();
+            bet.setUser(Utils.findByIdOrThrow(userRepository, randomId, "UserRepository"));
+            bet.setAmount(randomAmount.setScale(2, RoundingMode.HALF_UP));
+            bet.setPlayer(Utils.findByIdOrThrow(playerRepository, randomPlayer, "PlayerRepository"));
+            betRepository.save(bet);
+            admin.getAccount().addMoney(randomAmount);
+            userRepository.save(admin);
+        }
+        playerRepository.updateCoefficientsByGameId(4L, 0.05);
 
         log.debug("DB init is finished");
     }

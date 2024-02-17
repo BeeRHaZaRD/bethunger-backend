@@ -13,6 +13,7 @@ import com.hg.bethunger.model.enums.*;
 import com.hg.bethunger.repository.*;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,10 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
@@ -46,13 +44,19 @@ public class EventService {
     private final PlayerRepository playerRepository;
     private final SupplyRepository supplyRepository;
     private final EventTypeRepository eventTypeRepository;
+    private final BetRepository betRepository;
+    private final UserRepository userRepository;
     private final TaskScheduler taskScheduler;
     private final WebClient webClient;
 
     private final Map<Long, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
 
+    @Value("${bethunger.margin}")
+    private Double margin;
+
+
     @Autowired
-    public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler, WebClient webClient) {
+    public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler, WebClient webClient, BetRepository betRepository, UserRepository userRepository) {
         this.plannedEventRepository = plannedEventRepository;
         this.plannedEventMapper = plannedEventMapper;
         this.happenedEventRepository = happenedEventRepository;
@@ -63,6 +67,8 @@ public class EventService {
         this.playerRepository = playerRepository;
         this.supplyRepository = supplyRepository;
         this.eventTypeRepository = eventTypeRepository;
+        this.betRepository = betRepository;
+        this.userRepository = userRepository;
         this.taskScheduler = taskScheduler;
         this.webClient = webClient;
     }
@@ -142,6 +148,7 @@ public class EventService {
                 if (hPlayerEvent.getPlayerEventType() == HPlayerEventType.KILLED) {
                     Player player = hPlayerEvent.getPlayer();
                     player.updateStatus(PlayerStatus.DEAD);
+                    betRepository.updateStatusByPlayerId(player.getId(), BetStatus.LOSS);
                     log.debug("Happened event: Player killed");
 
                     // game completed
@@ -184,6 +191,17 @@ public class EventService {
         game.setWinnerOnComplete();
         game.setDuration(Duration.between(game.getDateStart(), finishDate));
         game.updateStatus(GameStatus.COMPLETED);
+
+        // change bets status and send winnings
+
+        List<Bet> winBets = betRepository.findAllByPlayerId(game.getWinner().getId());
+        if (winBets.isEmpty()) {
+            userRepository.returnFundsToUsers(game.getId(), margin);
+        } else {
+            betRepository.updateStatusByPlayerId(game.getWinner().getId(), BetStatus.WIN);
+            userRepository.addWinningsToUsers(game.getWinner().getId());
+        }
+        userRepository.subtractMoneyFromAdmin(game.getId(), margin);
 
         // cancel all the rest planned events, both SCHEDULED and REQUESTED
         game.getPlannedEvents().stream()

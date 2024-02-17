@@ -17,6 +17,7 @@ public class PlayerInfoDTO {
     private LocalDate birthDate;
     private Integer district;
     private Sex sex;
+    private Double coefficient;
     private LocalDateTime cooldownTo;
     private PlayerStatus status;
 }

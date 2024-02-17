@@ -2,7 +2,7 @@ package com.hg.bethunger.model;
 
 import com.hg.bethunger.model.enums.BetStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,11 +30,12 @@ public class Bet {
     private Player player;
 
     @NotNull
+    @DecimalMin(value = "10.0")
     private BigDecimal amount;
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
-    private BetStatus status;
+    private BetStatus status = BetStatus.PLACED;
 
     @OneToMany(mappedBy = "bet")
     private List<Transaction> transactions;
