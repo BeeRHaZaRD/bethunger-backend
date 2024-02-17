@@ -8,8 +8,11 @@ import com.hg.bethunger.mapper.PlannedEventMapper;
 import com.hg.bethunger.model.PlannedEvent;
 import com.hg.bethunger.service.EventService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -46,10 +49,11 @@ public class EventController {
     }
 
     @GetMapping(path = "/happened-events")
+    @Validated
     public List<HappenedEventDTO> getHappenedEvents(
         @PathVariable Long gameId,
-        @RequestParam(required = false) LocalDateTime after,
-        @RequestParam(required = false) Long playerId
+        @RequestParam(required = false) @PastOrPresent LocalDateTime after,
+        @RequestParam(required = false) @Positive Long playerId
     ) {
         if (after != null && playerId != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid query parameters");
