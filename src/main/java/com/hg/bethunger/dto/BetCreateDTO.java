@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class BetCreateDTO {
     private Long playerId;
+
     @DecimalMin(value = "10.0")
     @Digits(integer = 6, fraction = 2)
     private BigDecimal amount;

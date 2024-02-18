@@ -26,8 +26,8 @@ public class GameMapper {
     public GameMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
 
-        TypeMap<Game, GameInfoDTO> gameToGameInfoDTOTypeMap = modelMapper.createTypeMap(Game.class, GameInfoDTO.class);
-        TypeMap<Game, GameFullDTO> gameToGameFullDTOTypeMap = modelMapper.createTypeMap(Game.class, GameFullDTO.class);
+        TypeMap<Game, GameInfoDTO> gameToGameInfoDtoTypeMap = modelMapper.createTypeMap(Game.class, GameInfoDTO.class);
+        TypeMap<Game, GameFullDTO> gameToGameFullDtoTypeMap = modelMapper.createTypeMap(Game.class, GameFullDTO.class);
 
         Converter<List<Player>, Map<Integer, List<PlayerDTO>>> playersConverter = ctx -> {
             List<Player> src = ctx.getSource();
@@ -52,10 +52,10 @@ public class GameMapper {
             return duration != null ? duration.getSeconds() : null;
         };
 
-        gameToGameInfoDTOTypeMap.addMappings(
+        gameToGameInfoDtoTypeMap.addMappings(
             mapper -> mapper.using(durationConverter).map(Game::getDuration, GameInfoDTO::setDuration)
         );
-        gameToGameFullDTOTypeMap.addMappings(mapper -> {
+        gameToGameFullDtoTypeMap.addMappings(mapper -> {
             mapper.using(durationConverter).map(Game::getDuration, GameFullDTO::setDuration);
             mapper.using(playersConverter).map(Game::getPlayers, GameFullDTO::setPlayers);
             mapper.when(Conditions.not(MappingUtils.isSuperUser)).skip(Game::getEventTypes, GameFullDTO::setEventTypes);

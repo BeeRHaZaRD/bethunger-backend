@@ -14,6 +14,9 @@ public class BetMapper {
     @Autowired
     public BetMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
+
+        modelMapper.createTypeMap(Bet.class, BetDTO.class)
+            .addMappings(mapper -> mapper.map(src -> src.getPlayer().getGame(), BetDTO::setGame));
     }
 
     public Bet toEntity(BetCreateDTO betCreateDTO) {

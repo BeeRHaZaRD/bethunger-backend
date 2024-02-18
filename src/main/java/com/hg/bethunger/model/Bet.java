@@ -25,6 +25,7 @@ public class Bet {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @NotNull
     @ManyToOne
     @JoinColumn(name = "player_id")
     private Player player;

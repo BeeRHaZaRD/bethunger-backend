@@ -51,9 +51,8 @@ public class EventService {
 
     private final Map<Long, ScheduledFuture<?>> scheduledEvents = new ConcurrentHashMap<>();
 
-    @Value("${bethunger.margin}")
+    @Value("${bethunger.bet_margin}")
     private Double margin;
-
 
     @Autowired
     public EventService(PlannedEventRepository plannedEventRepository, PlannedEventMapper plannedEventMapper, HappenedEventRepository<HappenedEvent> happenedEventRepository, HPlayerEventRepository hPlayerEventRepository, HOtherEventRepository hOtherEventRepository, HappenedEventMapper happenedEventMapper, GameRepository gameRepository, PlayerRepository playerRepository, SupplyRepository supplyRepository, EventTypeRepository eventTypeRepository, TaskScheduler taskScheduler, WebClient webClient, BetRepository betRepository, UserRepository userRepository) {
@@ -193,7 +192,6 @@ public class EventService {
         game.updateStatus(GameStatus.COMPLETED);
 
         // change bets status and send winnings
-
         List<Bet> winBets = betRepository.findAllByPlayerId(game.getWinner().getId());
         if (winBets.isEmpty()) {
             userRepository.returnFundsToUsers(game.getId(), margin);

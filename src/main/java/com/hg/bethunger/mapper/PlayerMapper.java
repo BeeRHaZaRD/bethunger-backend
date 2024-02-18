@@ -2,6 +2,7 @@ package com.hg.bethunger.mapper;
 
 import com.hg.bethunger.dto.PlayerDTO;
 import com.hg.bethunger.dto.PlayerInfoDTO;
+import com.hg.bethunger.dto.PlayerOddDTO;
 import com.hg.bethunger.dto.TrainResultsDTO;
 import com.hg.bethunger.model.Player;
 import com.hg.bethunger.model.TrainResults;
@@ -31,11 +32,15 @@ public class PlayerMapper {
         return modelMapper.map(player, PlayerDTO.class);
     }
 
-    public PlayerInfoDTO toInfoDTO(Player player) {
+    public PlayerInfoDTO toInfoDto(Player player) {
         return modelMapper.map(player, PlayerInfoDTO.class);
     }
 
-    public TrainResultsDTO toTrainResultsDTO(TrainResults trainResults) {
+    public PlayerOddDTO toOddDto(Player player) {
+        return modelMapper.map(player, PlayerOddDTO.class);
+    }
+
+    public TrainResultsDTO toTrainResultsDto(TrainResults trainResults) {
         return modelMapper.map(trainResults, TrainResultsDTO.class);
     }
 

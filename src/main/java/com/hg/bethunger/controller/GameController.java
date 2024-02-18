@@ -6,6 +6,7 @@ import com.hg.bethunger.model.enums.GameStatus;
 import com.hg.bethunger.model.enums.UserRole;
 import com.hg.bethunger.security.UserPrincipal;
 import com.hg.bethunger.service.GameService;
+import com.hg.bethunger.service.PlayerService;
 import jakarta.validation.Valid;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,12 @@ import java.util.List;
 @RequestMapping(path="/games")
 public class GameController {
     private final GameService gameService;
+    private final PlayerService playerService;
 
     @Autowired
-    public GameController(GameService gameService) {
+    public GameController(GameService gameService, PlayerService playerService) {
         this.gameService = gameService;
+        this.playerService = playerService;
     }
 
     @GetMapping
@@ -43,6 +46,11 @@ public class GameController {
             throw new ResourceNotFoundException("Game", gameId);
         }
         return gameFullDTO;
+    }
+
+    @GetMapping(path = "/{gameId}/odds")
+    public List<PlayerOddDTO> getOdds(@PathVariable Long gameId) {
+        return playerService.getOdds(gameId);
     }
 
     @PostMapping

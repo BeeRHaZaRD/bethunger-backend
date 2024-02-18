@@ -38,7 +38,7 @@ public class Player implements Cloneable {
 
     private LocalDate birthDate;
 
-    private Double coefficient;
+    private Double odd;
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)

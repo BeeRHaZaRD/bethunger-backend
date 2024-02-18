@@ -7,6 +7,9 @@ bethunger.jwt.secret=
 bethunger.jwt.issuer=
 bethunger.jwt.lifetime=
 
+bethunger.supply_cooldown=24h
+bethunger.bet_margin=0.05
+
 # JPA
 spring.jpa.hibernate.ddl-auto=create-drop
 

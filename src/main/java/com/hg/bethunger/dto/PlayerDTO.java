@@ -17,7 +17,7 @@ public class PlayerDTO {
     private LocalDate birthDate;
     private Integer district;
     private Sex sex;
-    private Double coefficient;
+    private Double odd;
     private PlayerStatus status;
     private LocalDateTime cooldownTo;
     private TrainResultsDTO trainResults;

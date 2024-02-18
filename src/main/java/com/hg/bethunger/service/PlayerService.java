@@ -3,12 +3,14 @@ package com.hg.bethunger.service;
 import com.hg.bethunger.Utils;
 import com.hg.bethunger.dto.PlayerDTO;
 import com.hg.bethunger.dto.PlayerInfoDTO;
+import com.hg.bethunger.dto.PlayerOddDTO;
 import com.hg.bethunger.dto.TrainResultsDTO;
 import com.hg.bethunger.mapper.MappingUtils;
 import com.hg.bethunger.mapper.PlayerMapper;
 import com.hg.bethunger.model.Player;
 import com.hg.bethunger.model.TrainResults;
 import com.hg.bethunger.model.enums.Sex;
+import com.hg.bethunger.repository.GameRepository;
 import com.hg.bethunger.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,11 +23,13 @@ import java.util.List;
 public class PlayerService {
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+    private final GameRepository gameRepository;
 
     @Autowired
-    public PlayerService(PlayerRepository playerRepository, PlayerMapper playerMapper) {
+    public PlayerService(PlayerRepository playerRepository, PlayerMapper playerMapper, GameRepository gameRepository) {
         this.playerRepository = playerRepository;
         this.playerMapper = playerMapper;
+        this.gameRepository = gameRepository;
     }
 
     public PlayerDTO getPlayerById(Long id) {
@@ -35,14 +39,20 @@ public class PlayerService {
 
     public List<PlayerInfoDTO> getPlayers() {
         return MappingUtils.mapList(
-            playerRepository.findAll(), playerMapper::toInfoDTO
+            playerRepository.findAll(), playerMapper::toInfoDto
         );
     }
 
     public List<PlayerInfoDTO> getAvailablePlayers(Integer district, Sex sex) {
         return MappingUtils.mapList(
-            playerRepository.findAllByDistrictAndSexAndGameIsNull(district, sex), playerMapper::toInfoDTO
+            playerRepository.findAllByDistrictAndSexAndGameIsNull(district, sex), playerMapper::toInfoDto
         );
+    }
+
+    public List<PlayerOddDTO> getOdds(Long gameId) {
+        Utils.existsByIdOrThrow(gameRepository, gameId, "Game");
+        var res = playerRepository.getPlayerOddsByGameId(gameId);
+        return res.stream().map(playerMapper::toOddDto).toList();
     }
 
     @Transactional
@@ -56,6 +66,6 @@ public class PlayerService {
         TrainResults trainResults = playerMapper.toTrainResults(trainResultsDTO);
         player.setTrainResults(trainResults);
 
-        return playerMapper.toTrainResultsDTO(trainResults);
+        return playerMapper.toTrainResultsDto(trainResults);
     }
 }

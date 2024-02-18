@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class SupplyDTO {
+    private Long id;
     private PlayerInfoDTO player;
     private ItemDTO item;
     private BigDecimal amount;
